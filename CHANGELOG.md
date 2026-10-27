@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-27
+
 ### Added
 
 - Follow French basketball teams written `COMPETITION:TEAM`: Betclic ELITE,
@@ -21,3 +23,6 @@ the notes of the version's GitHub Release.
   scored, game ended. Scene action: get the game of a team.
 - Dashboard widgets: one team's game, and all followed teams.
 - Configuration buttons: test the teams, find a team of a competition.
+
+[Unreleased]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/quentinlegay/gladys-ffbb/releases/tag/v0.1.1
