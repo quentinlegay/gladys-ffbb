@@ -118,7 +118,9 @@ d'envoi, le résultat et le résumé du match en cours ou à venir.
 - **« équipe absente de cette compétition »** : utilisez **Trouver une
   équipe** et copiez la ligne proposée.
 - **« plusieurs équipes correspondent »** : écrivez le nom complet proposé.
-- **« la FFBB n'a pas de compétition avec ce code cette saison »** : vérifiez
-  le code dans le tableau ci-dessus.
+- **« compétition introuvable à la FFBB cette saison »** : l'intégration a
+  cherché la compétition par code puis par nom sans la trouver. Le bouton
+  **Trouver une équipe** liste alors les compétitions FFBB de la saison avec
+  leur code : écrivez ce code à la place du nôtre, par ex. `CODE:Paris`.
 - **Appareil injoignable** : la FFBB ne répond pas ; le dernier match connu est
   conservé et la lecture reprend toute seule.

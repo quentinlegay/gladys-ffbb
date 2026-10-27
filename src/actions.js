@@ -29,8 +29,8 @@ const REASONS = {
     fr: 'code de compétition inconnu (voir la documentation)',
   },
   competition_not_found: {
-    en: 'the FFBB has no competition with this code this season',
-    fr: "la FFBB n'a pas de compétition avec ce code cette saison",
+    en: 'competition not found at the FFBB this season, "Find a team" lists the FFBB codes',
+    fr: 'compétition introuvable à la FFBB cette saison, « Trouver une équipe » liste les codes FFBB',
   },
   duplicate: {
     en: 'written twice',
@@ -66,6 +66,25 @@ const MORE = {
   en: (more) => `… and ${more} more, narrow the search.`,
   fr: (more) => `… et ${more} autres, affinez la recherche.`,
 };
+
+// The competition is missing: show what the FFBB has, with the codes to write.
+const NOT_FOUND = {
+  en: (name, count) =>
+    count > 0
+      ? `${name} not found at the FFBB this season. Competitions found, write CODE:TEAM with their code:`
+      : `${name} not found at the FFBB this season, and no competition with a close name.`,
+  fr: (name, count) =>
+    count > 0
+      ? `${name} introuvable à la FFBB cette saison. Compétitions trouvées, écrivez CODE:ÉQUIPE avec leur code :`
+      : `${name} introuvable à la FFBB cette saison, ni aucune compétition au nom proche.`,
+};
+
+function notFound(competition, suggestions) {
+  const lines = suggestions.map((c) => `${c.code || '?'} — ${c.name}`);
+  return multilingual((language) =>
+    [NOT_FOUND[language](competition.name, lines.length), ...lines].join('\n'),
+  );
+}
 
 /** What to write to follow `team`: its name, or its id when the name cannot be written. */
 function entryFor(code, team) {
@@ -128,9 +147,7 @@ export async function findTeams(tracker, fields) {
     return { ...REASONS.unreachable };
   }
   if (!found.found) {
-    return multilingual(
-      (language) => `${competition.name}: ${REASONS.competition_not_found[language]}`,
-    );
+    return notFound(competition, found.suggestions ?? []);
   }
   const search = normalize(fields.search);
   const teams = found.teams.filter(

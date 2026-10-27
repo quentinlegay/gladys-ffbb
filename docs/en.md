@@ -114,7 +114,9 @@ the result and the summary of the current or next game.
 - **"no such team in this competition"**: use **Find a team** and copy the
   suggested line.
 - **"several teams match"**: write the full name suggested.
-- **"the FFBB has no competition with this code this season"**: check the
-  code in the table above.
+- **"competition not found at the FFBB this season"**: the integration
+  looked for it by code, then by name, without success. The **Find a team**
+  button then lists the FFBB competitions of the season with their codes:
+  write that code instead of ours, e.g. `CODE:Paris`.
 - **Device unreachable**: the FFBB does not answer; the last known game is
   kept and reading resumes on its own.

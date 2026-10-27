@@ -21,3 +21,7 @@ the notes of the version's GitHub Release.
   scored, game ended. Scene action: get the game of a team.
 - Dashboard widgets: one team's game, and all followed teams.
 - Configuration buttons: test the teams, find a team of a competition.
+- A competition the FFBB files under another code than expected is found by
+  its name; when it is not found at all, "Find a team" lists the FFBB
+  competitions of the season with the codes to write, and the search is
+  retried after an hour instead of a day.

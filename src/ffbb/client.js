@@ -3,8 +3,8 @@
 //
 // A Directus server at https://api.ffbb.app/ :
 //   - items/configuration            public: hands out the read token (key_dh);
-//   - items/ffbbserver_competitions  competitions, filtered by code: their
-//                                    season and their pools ("poules");
+//   - items/ffbbserver_competitions  competitions, filtered by code or name:
+//                                    their season and pools ("poules");
 //   - items/ffbbserver_poules/<id>   a pool with all its games ("rencontres"):
 //                                    teams, date, final scores;
 //   - json/lives.json                the games being played right now, with
@@ -141,6 +141,21 @@ export function createFfbbClient({ fetch = globalThis.fetch, timeoutMs = TIMEOUT
       const url = withParams('items/ffbbserver_competitions', [
         ['filter[code][_in]', codes.join(',')],
         ['limit', '100'],
+        ...COMPETITION_FIELDS.map((field) => ['fields[]', field]),
+      ]);
+      const json = await getJson(url);
+      return Array.isArray(json?.data) ? json.data : [];
+    },
+
+    /**
+     * Every competition whose name contains `term` (case and accents as the
+     * server compares them), all seasons mixed: the fallback when the code of
+     * a competition is not the one expected.
+     */
+    async searchCompetitions(term) {
+      const url = withParams('items/ffbbserver_competitions', [
+        ['filter[nom][_icontains]', term],
+        ['limit', '500'],
         ...COMPETITION_FIELDS.map((field) => ['fields[]', field]),
       ]);
       const json = await getJson(url);

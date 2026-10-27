@@ -53,10 +53,24 @@ test('find_team lists the teams of a competition with the text to paste', async 
   assert.match(none.fr, /Aucune équipe/);
 });
 
+test('find_team lists the FFBB competitions and their codes when ours is missing', async () => {
+  const { tracker, ffbb } = setup('');
+  const saison = { actif: true, debut: '2026-07-01' };
+  ffbb.otherCompetitions = [
+    { id: 1, nom: 'CHAMPIONNAT NATIONALE MASCULINE U18', code: 'NMU18', saison },
+    { id: 2, nom: 'COUPE DE FRANCE NATIONALE', code: 'CDFN', saison },
+  ];
+  const message = await findTeams(tracker, { competition: 'NM1' });
+  assert.deepEqual(message.fr.split('\n'), [
+    'Nationale 1 introuvable à la FFBB cette saison. Compétitions trouvées, écrivez CODE:ÉQUIPE avec leur code :',
+    'CDFN — COUPE DE FRANCE NATIONALE',
+  ]);
+});
+
 test('find_team: unknown code, competition absent, FFBB down', async () => {
   const { tracker, ffbb } = setup('');
   assert.match((await findTeams(tracker, { competition: '??' })).en, /Unknown competition/);
-  assert.match((await findTeams(tracker, { competition: 'NM1' })).fr, /pas de compétition/);
+  assert.match((await findTeams(tracker, { competition: 'NM1' })).fr, /introuvable à la FFBB/);
   ffbb.down = true;
   assert.match((await findTeams(tracker, { competition: 'LFB' })).fr, /n'a pas répondu/);
 });

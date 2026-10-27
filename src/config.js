@@ -110,6 +110,8 @@ export function parseTeams(text) {
       entry,
       code: competition.code,
       ffbbCodes: competition.ffbbCodes,
+      searchTerms: competition.searchTerms,
+      pattern: competition.pattern,
       competitionName: competition.name,
       team,
     });
