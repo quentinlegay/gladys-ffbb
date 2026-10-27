@@ -133,6 +133,15 @@ export function formatStatus(match, { language, timezone }, now = Date.now()) {
   return `${w.next} · ${formatKickoff(match, language, timezone)} · ${formatOpponent(match, language)}`;
 }
 
+/** The next game in one line: "sam. 8 nov., 20:00 · contre ASVEL". */
+export function formatNext(match, { language, timezone }) {
+  if (!match) {
+    return words(language).noMatch;
+  }
+  const line = `${formatKickoff(match, language, timezone)} · ${formatOpponent(match, language)}`;
+  return match.statusName === 'POSTPONED' ? `${words(language).postponed} · ${line}` : line;
+}
+
 /** Every language at once, for the widgets and the action messages. */
 export function multilingual(build) {
   return Object.fromEntries(LANGUAGES.map((language) => [language, build(language)]));

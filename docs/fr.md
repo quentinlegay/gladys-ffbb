@@ -62,13 +62,15 @@ choisie automatiquement : rien à changer d'une saison à l'autre.
 
 ## Appareils
 
-Chaque équipe suivie est un appareil à trois fonctionnalités en lecture seule :
+Chaque équipe suivie est un appareil à quatre fonctionnalités en lecture seule :
 
 - **Score** : les points de l'équipe dans le match en cours (ou le dernier) ;
 - **Score adverse** : les points de l'adversaire ;
 - **Match** : une ligne de texte, par ex. `En direct · Q3 05:12 · MON 56 – 50 PLB`,
   `Terminé · MON 81 – 77 PLB · Victoire` ou
-  `Prochain match · dim. 1 nov., 20:00 · contre PLB`.
+  `Prochain match · dim. 1 nov., 20:00 · contre PLB` ;
+- **Prochain match** : le prochain match à venir, même pendant qu'un résultat
+  est affiché, par ex. `dim. 8 nov., 20:00 · à ASV`.
 
 Avant un match, les scores valent 0 : une condition « mon équipe mène » ne
 reste pas vraie sur le score du match précédent.
@@ -97,8 +99,10 @@ d'envoi, le résultat et le résumé du match en cours ou à venir.
 ## Widgets
 
 - **Match d'une équipe** : score en direct, quart-temps et chrono, coup
-  d'envoi, adversaire, bouton Actualiser.
+  d'envoi, adversaire, les trois matchs suivants, bouton Actualiser.
 - **Mes équipes** : toutes les équipes suivies, les matchs en direct d'abord.
+- **Prochains matchs** : les prochains matchs de toutes les équipes suivies,
+  du plus proche au plus lointain.
 
 ## Fonctionnement
 

@@ -95,3 +95,24 @@ test('an HTTP error, a network error or a missing token are FfbbErrors', async (
   });
   await assert.rejects(notFound.poule(1), (err) => err instanceof FfbbError && err.status === 404);
 });
+
+test('a pool refused with the optional fields is read without them, from then on', async () => {
+  const { fetch, calls } = fakeFetch({
+    'items/configuration': () => ({ body: { data: { key_dh: 't' } } }),
+    'items/ffbbserver_poules/7': () => ({ body: { data: { id: 7 } } }),
+  });
+  let refused = 0;
+  const refusing = async (url, options) => {
+    if (url.includes('rencontres.horaire')) {
+      refused += 1;
+      return { ok: false, status: 403, json: async () => ({}) };
+    }
+    return fetch(url, options);
+  };
+  const client = createFfbbClient({ fetch: refusing });
+  assert.deepEqual(await client.poule(7), { id: 7 });
+  assert.deepEqual(await client.poule(7), { id: 7 });
+  // Refused twice (the token is read again once on a 403), then never asked again.
+  assert.equal(refused, 2);
+  assert.equal(calls.filter((c) => c.url.includes('poules')).length, 2);
+});

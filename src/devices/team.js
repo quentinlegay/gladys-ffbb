@@ -1,10 +1,12 @@
 // -----------------------------------------------------------------------------
 // Device type: FOLLOWED TEAM
 //
-// One Gladys device per followed team, three read-only features:
+// One Gladys device per followed team, four read-only features:
 //   - team-score      the team's score in the current (or last) game;
 //   - opponent-score  the opponent's score;
-//   - status          one line: "En direct · Q3 05:12 · Monaco 56 – 50 ASVEL".
+//   - status          one line: "En direct · Q3 05:12 · Monaco 56 – 50 ASVEL";
+//   - next-match      the next game, even while the last result is shown:
+//                     "sam. 8 nov., 20:00 · contre ASVEL".
 //
 // Scores are `counter-sensor` integers, so scene conditions can compare them
 // ("if my team leads"). The status is a `text` feature: Gladys shows it as is
@@ -16,7 +18,7 @@
 // -----------------------------------------------------------------------------
 
 import { DEVICE_FEATURE_CATEGORIES, DEVICE_FEATURE_TYPES } from '@gladysassistant/integration-sdk';
-import { formatStatus } from '../format.js';
+import { formatNext, formatStatus } from '../format.js';
 import { competitionKey } from '../competitions.js';
 
 export const DEVICE_TYPE = 'team';
@@ -25,6 +27,7 @@ export const FEATURE = {
   TEAM_SCORE: 'team-score',
   OPPONENT_SCORE: 'opponent-score',
   STATUS: 'status',
+  NEXT_MATCH: 'next-match',
 };
 
 const FEATURE_NAMES = {
@@ -32,11 +35,13 @@ const FEATURE_NAMES = {
     [FEATURE.TEAM_SCORE]: 'Score',
     [FEATURE.OPPONENT_SCORE]: 'Opponent score',
     [FEATURE.STATUS]: 'Game',
+    [FEATURE.NEXT_MATCH]: 'Next game',
   },
   fr: {
     [FEATURE.TEAM_SCORE]: 'Score',
     [FEATURE.OPPONENT_SCORE]: 'Score adverse',
     [FEATURE.STATUS]: 'Match',
+    [FEATURE.NEXT_MATCH]: 'Prochain match',
   },
 };
 
@@ -70,24 +75,26 @@ export function buildTeamDevice(gladys, tracked, config) {
     has_feedback: false,
     keep_history: true,
   });
+  const textFeature = (key) => ({
+    name: names[key],
+    external_id: ids.feature(key),
+    category: DEVICE_FEATURE_CATEGORIES.TEXT,
+    type: DEVICE_FEATURE_TYPES.TEXT.TEXT,
+    // Gladys stores min/max as NOT NULL, text features included.
+    min: 0,
+    max: 0,
+    read_only: true,
+    has_feedback: false,
+    keep_history: false,
+  });
   return {
     name: `${tracked.info.name} (${tracked.spec.competitionName})`,
     external_id: ids.device,
     features: [
       score(FEATURE.TEAM_SCORE),
       score(FEATURE.OPPONENT_SCORE),
-      {
-        name: names[FEATURE.STATUS],
-        external_id: ids.feature(FEATURE.STATUS),
-        category: DEVICE_FEATURE_CATEGORIES.TEXT,
-        type: DEVICE_FEATURE_TYPES.TEXT.TEXT,
-        // Gladys stores min/max as NOT NULL, text features included.
-        min: 0,
-        max: 0,
-        read_only: true,
-        has_feedback: false,
-        keep_history: false,
-      },
+      textFeature(FEATURE.STATUS),
+      textFeature(FEATURE.NEXT_MATCH),
     ],
   };
 }
@@ -117,6 +124,10 @@ export function teamStates(gladys, tracked, config, now) {
   states.push({
     device_feature_external_id: ids.feature(FEATURE.STATUS),
     text: formatStatus(match, config, now),
+  });
+  states.push({
+    device_feature_external_id: ids.feature(FEATURE.NEXT_MATCH),
+    text: formatNext(tracked.upcoming?.[0] ?? null, config),
   });
   return states;
 }

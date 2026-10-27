@@ -82,17 +82,42 @@ function zoneOffset(timestamp, zone) {
 }
 
 /**
+ * The tip-off time the FFBB keeps apart from the date, in `horaire`: an
+ * integer HHMM (2030), or text ("20:30", "20h30"). Null when not set.
+ * @returns {{ hours: number, minutes: number } | null}
+ */
+export function parseHoraire(raw) {
+  const value = text(raw);
+  const match =
+    value.match(/^(\d{1,2})(?:[:h](\d{2}))?(?::\d{2})?$/) ?? value.match(/^(\d{1,2})(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  const hours = Number(match[1]);
+  const minutes = Number(match[2] ?? 0);
+  if (hours > 23 || minutes > 59 || (hours === 0 && minutes === 0)) {
+    return null;
+  }
+  return { hours, minutes };
+}
+
+/**
  * A FFBB date as an ISO instant. A date without an offset is French local
- * time; midnight, or no time at all, means "time not set yet".
+ * time; midnight, or no time at all, means "time not set yet" — unless the
+ * separate `horaire` gives it.
  * @returns {{ iso: string, timeKnown: boolean }}
  */
-export function parseFfbbDate(raw) {
+export function parseFfbbDate(raw, horaire) {
   const value = text(raw);
   const local = value.match(
     /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?)?$/,
   );
   if (local) {
-    const [, y, mo, d, h = '0', mi = '0', s = '0'] = local;
+    let [, y, mo, d, h = '0', mi = '0', s = '0'] = local;
+    const time = parseHoraire(horaire);
+    if (time && +h === 0 && +mi === 0) {
+      [h, mi, s] = [time.hours, time.minutes, 0];
+    }
     const wall = Date.UTC(+y, +mo - 1, +d, +h, +mi, +s);
     // The offset at the wall time, corrected once for the DST switch.
     let instant = wall - zoneOffset(wall, FFBB_TIMEZONE);
@@ -125,6 +150,21 @@ function sides(rencontre) {
 /** The identity of a team in its competition: the club, else the entry. */
 function teamId(side) {
   return side.organismeId || side.engagementId;
+}
+
+/**
+ * Is this side of a game the team? The team is its key (club or entry id) or
+ * the team itself: a game whose club is not filled in is still recognized by
+ * the team's entry.
+ */
+function isTeam(side, team) {
+  const key = typeof team === 'object' ? team.id : team;
+  const entries = typeof team === 'object' ? (team.engagementIds ?? []) : [];
+  return (
+    (Boolean(side.organismeId) && side.organismeId === key) ||
+    (Boolean(side.engagementId) &&
+      (side.engagementId === key || entries.includes(side.engagementId)))
+  );
 }
 
 /**
@@ -316,26 +356,29 @@ function gameState(rencontre, live) {
 }
 
 /**
- * The game of a pool entry as seen from `teamKey` (club or entry id), or
- * null when the team does not play it.
+ * The game of a pool entry as seen from `team`, or null when the team does
+ * not play it.
  * @param {object} rencontre
- * @param {string} teamKey
+ * @param {string | { id: string, engagementIds?: string[] }} team its key, or itself
  * @param {object} [live] the entry of the live feed for this game
  * @returns {Match | null}
  */
-export function matchFromRencontre(rencontre, teamKey, live) {
+export function matchFromRencontre(rencontre, team, live) {
   const [home, away] = sides(rencontre ?? {});
-  const isHome = teamId(home) === teamKey || home.engagementId === teamKey;
-  const isAway = teamId(away) === teamKey || away.engagementId === teamKey;
+  const isHome = isTeam(home, team);
+  const isAway = !isHome && isTeam(away, team);
   if (!isHome && !isAway) {
     return null;
   }
   const mine = isHome ? home : away;
   const other = isHome ? away : home;
-  const game = gameState(rencontre, live);
+  let game = gameState(rencontre, live);
+  if (rencontre.remise === true && game.state === 'pre') {
+    game = { ...game, statusName: 'POSTPONED' };
+  }
   const myScore = isHome ? game.home : game.away;
   const otherScore = isHome ? game.away : game.home;
-  const { iso, timeKnown } = parseFfbbDate(rencontre.date_rencontre);
+  const { iso, timeKnown } = parseFfbbDate(rencontre.date_rencontre, rencontre.horaire);
 
   let result = null;
   if (game.state === 'post' && game.completed) {
@@ -370,19 +413,58 @@ export function matchFromRencontre(rencontre, teamKey, live) {
 // A finished game stays on display this long after its tip-off, before the
 // next one takes its place.
 const RECENT_POST_MS = 18 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Pick the game of `teamKey` to show: a live one wins, then one finished in
+/** Every dated game of the team, oldest first. */
+function teamMatches(rencontres, team, liveOf) {
+  return rencontres
+    .map((rencontre) => matchFromRencontre(rencontre, team, liveOf(rencontre)))
+    .filter((match) => match && match.kickoff)
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+}
+
+/**
+ * The team's next games, soonest first: the ones not started whose tip-off
+ * is ahead (or today, for a game whose time is not set yet).
+ * @returns {Match[]}
+ */
+export function upcomingMatches(rencontres, team, liveOf, now = Date.now(), limit = 5) {
+  return teamMatches(rencontres, team, liveOf)
+    .filter((match) => {
+      if (match.state !== 'pre') {
+        return false;
+      }
+      const kickoff = Date.parse(match.kickoff);
+      return match.timeKnown ? kickoff > now : kickoff > now - DAY_MS;
+    })
+    .slice(0, limit);
+}
+
+/**
+ * What was read for a team, for "Test the teams": its games, the upcoming
+ * ones, and the games whose date could not be read (with an example).
+ */
+export function teamGameStats(rencontres, team, now = Date.now()) {
+  const mine = rencontres.filter((rencontre) => matchFromRencontre(rencontre, team) !== null);
+  const undated = mine.filter((rencontre) => !parseFfbbDate(rencontre.date_rencontre).iso);
+  return {
+    games: mine.length,
+    upcoming: upcomingMatches(mine, team, () => undefined, now, Infinity).length,
+    undated: undated.length,
+    sampleDate: undated.length > 0 ? text(undated[0].date_rencontre) : '',
+  };
+}
+
+/**
+ * Pick the game of `team` to show: a live one wins, then one finished in
  * the last hours, then the next one to come, else the last one played.
  * @param {object[]} rencontres every game of the team's pools
  * @param {(rencontre: object) => object | undefined} liveOf
  * @returns {Match | null}
  */
-export function pickMatch(rencontres, teamKey, liveOf, now = Date.now()) {
-  const matches = rencontres
-    .map((rencontre) => matchFromRencontre(rencontre, teamKey, liveOf(rencontre)))
-    .filter((match) => match && match.kickoff)
-    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+export function pickMatch(rencontres, team, liveOf, now = Date.now()) {
+  const matches = teamMatches(rencontres, team, liveOf);
   if (matches.length === 0) {
     return null;
   }

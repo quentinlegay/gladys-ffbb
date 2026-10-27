@@ -13,9 +13,10 @@ federation's official app. It started from the official JavaScript template
 and follows the design of [prohand/gladys-teamtracker](https://github.com/prohand/gladys-teamtracker).
 
 The user writes `COMPETITION:TEAM` entries (`ELITE:Monaco, NM1:Saint-Quentin`). Each team
-becomes a device (team score, opponent score, a "Match" status text), plus five scene
+becomes a device (team score, opponent score, a "Match" status text, a "Next game" text),
+plus five scene
 triggers (match soon, started, team scored, opponent scored, ended), one scene action
-(`get_match`) and two widgets (`team_match`, `my_teams`). Gladys 5.3+ is required (the
+(`get_match`) and three widgets (`team_match`, `my_teams`, `upcoming_matches`). Gladys 5.3+ is required (the
 manifest `keywords` need it). Manifest `transports: ["cloud"]`.
 
 ## Commands
@@ -49,7 +50,7 @@ src/store.js            last reading per team, in /data (restart-safe events)
 src/devices/team.js     the device of a followed team (external ids, features, states)
 src/actions.js          Configuration buttons: test_teams, find_team
 src/scenes.js           scene action get_match (reads the cache, never the FFBB)
-src/widgets.js          widgets team_match and my_teams
+src/widgets.js          widgets team_match, my_teams and upcoming_matches
 test/fixtures/          FFBB answers shaped after the API fields — tests never touch the network
 ```
 
@@ -60,7 +61,8 @@ token (`key_dh`), sent as `Bearer` on every other call and read again on a 401/4
 competition (`items/ffbbserver_competitions`, filtered by `code`) has a `saison` and pools
 (`poules`, also under `phases`); a pool (`items/ffbbserver_poules/<id>`) holds its games
 (`rencontres`): `idEngagementEquipe1/2` (team entries: `nom`, `nomUsuel`, `codeAbrege`),
-`idOrganismeEquipe1/2` (clubs), `date_rencontre`, `joue`, `resultatEquipe1/2`, and `gsId`
+`idOrganismeEquipe1/2` (clubs), `date_rencontre` (sometimes the day only: the time is
+then in `horaire`, HHMM), `joue`, `remise` (postponed), `resultatEquipe1/2`, and `gsId`
 (the live-stats game: `matchId`, `currentStatus`, period scores). `json/lives.json` lists
 the games being played, joined on `gsId.matchId`. Equipe 1 is the home team.
 

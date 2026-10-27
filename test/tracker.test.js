@@ -289,3 +289,27 @@ test('the same club written twice only makes one device', async () => {
   await tracker.refresh();
   assert.equal(gladys.discovered.at(-1).length, 1);
 });
+
+test('the next game stays on the device while the last result is shown', async () => {
+  // The day after Monaco lost in Paris: the status tells the result, the
+  // next-match feature the game of Nov 1.
+  const { gladys, tracker } = setup({ teams: 'ELITE:Monaco', now: '2026-10-26T08:00Z' });
+  await tracker.refresh();
+  gladys.createAll();
+  await tracker.refresh();
+  assert.deepEqual(statesOf(gladys, ':status'), ['Terminé · MON 88 – 90 PAR · Défaite']);
+  assert.deepEqual(statesOf(gladys, ':next-match'), ['dim. 1 nov., 20:00 · contre PLB']);
+  assert.deepEqual(
+    tracker.list()[0].upcoming.map((m) => m.id),
+    [NEXT_GAME],
+  );
+  assert.deepEqual(tracker.list()[0].stats, { games: 3, upcoming: 1, undated: 0, sampleDate: '' });
+});
+
+test('no game to come: the next-match feature says so', async () => {
+  const { gladys, tracker } = setup({ teams: 'ELITE:Monaco', now: '2026-11-05T08:00Z' });
+  await tracker.refresh();
+  gladys.createAll();
+  await tracker.refresh();
+  assert.deepEqual(statesOf(gladys, ':next-match'), ['Aucun match prévu']);
+});

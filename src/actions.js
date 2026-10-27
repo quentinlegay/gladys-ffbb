@@ -10,7 +10,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { formatStatus, multilingual } from './format.js';
+import { formatNext, formatStatus, multilingual } from './format.js';
 import { COMPETITIONS, parseCompetition } from './competitions.js';
 import { normalize } from './ffbb/parse.js';
 
@@ -101,12 +101,31 @@ function describeTeam(tracked, config, language, now) {
     const reason = REASONS[tracked.resolveError ?? 'unreachable'][language];
     return `${spec.entry}: ${reason}`;
   }
-  const status =
-    tracked.reachable === false
-      ? REASONS.unreachable[language]
-      : formatStatus(tracked.match ?? null, { ...config, language }, now);
-  return `${tracked.info.name} (${spec.competitionName}): ${status}`;
+  if (tracked.reachable === false) {
+    return `${tracked.info.name} (${spec.competitionName}): ${REASONS.unreachable[language]}`;
+  }
+  const lines = [
+    `${tracked.info.name} (${spec.competitionName}): ${formatStatus(tracked.match ?? null, { ...config, language }, now)}`,
+    // The games to come after the one the status already tells.
+    ...(tracked.upcoming ?? [])
+      .filter((match) => match.id !== tracked.match?.id)
+      .map((match) => `  → ${formatNext(match, { ...config, language })}`),
+  ];
+  if (tracked.stats && tracked.stats.upcoming === 0) {
+    lines.push(`  ${NO_UPCOMING[language](tracked.stats)}`);
+  }
+  return lines.join('\n');
 }
+
+// Why no game to come: what was read, to tell an empty calendar from a bug.
+const NO_UPCOMING = {
+  en: ({ games, undated, sampleDate }) =>
+    `no game to come among the ${games} game(s) read` +
+    (undated > 0 ? `, ${undated} with an unreadable date (e.g. "${sampleDate}")` : ''),
+  fr: ({ games, undated, sampleDate }) =>
+    `aucun match à venir parmi les ${games} match(s) lus` +
+    (undated > 0 ? `, dont ${undated} à la date illisible (ex. « ${sampleDate} »)` : ''),
+};
 
 /** Handler of `test_teams`. */
 export async function testTeams(tracker) {

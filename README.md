@@ -24,6 +24,7 @@ Each team becomes a device:
 | `team-score`     | counter sensor (integer) | the team's points in the current or last game |
 | `opponent-score` | counter sensor (integer) | the opponent's points                         |
 | `status`         | text                     | `En direct · Q3 05:12 · MON 56 – 50 PLB`      |
+| `next-match`     | text                     | `dim. 8 nov., 20:00 · à ASV`                  |
 
 On top of the devices (Gladys ≥ 5.3.0):
 
@@ -31,7 +32,7 @@ On top of the devices (Gladys ≥ 5.3.0):
 | -------------- | ------------------------------------------------------------------------------ |
 | Scene triggers | `match_soon`, `match_started`, `team_scored`, `opponent_scored`, `match_ended` |
 | Scene action   | `get_match`                                                                    |
-| Widgets        | `team_match`, `my_teams`                                                       |
+| Widgets        | `team_match`, `my_teams`, `upcoming_matches`                                   |
 | Config buttons | `test_teams`, `find_team`                                                      |
 
 ## Data source

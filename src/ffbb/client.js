@@ -54,6 +54,13 @@ export const RENCONTRE_FIELDS = [
   ]),
 ];
 
+// Fields read when the FFBB allows them: it restricts fields now and then,
+// and Directus refuses the whole request (403) when one is forbidden. A
+// pool refused with them is read again without them.
+//   - horaire  the tip-off time, when `date_rencontre` holds only the day;
+//   - remise   the game is postponed.
+export const OPTIONAL_RENCONTRE_FIELDS = ['horaire', 'remise'];
+
 const COMPETITION_FIELDS = [
   'id',
   'nom',
@@ -91,6 +98,8 @@ function withParams(path, params) {
  */
 export function createFfbbClient({ fetch = globalThis.fetch, timeoutMs = TIMEOUT_MS } = {}) {
   let token = null;
+  // Cleared for good once the FFBB refuses the optional fields.
+  let optionalAllowed = true;
 
   async function request(url, headers) {
     let response;
@@ -164,13 +173,25 @@ export function createFfbbClient({ fetch = globalThis.fetch, timeoutMs = TIMEOUT
 
     /** A pool and all its games. */
     async poule(pouleId) {
-      const url = withParams(`items/ffbbserver_poules/${encodeURIComponent(pouleId)}`, [
-        ['deep[rencontres][_limit]', '1000'],
-        ['fields[]', 'id'],
-        ['fields[]', 'nom'],
-        ...RENCONTRE_FIELDS.map((field) => ['fields[]', `rencontres.${field}`]),
-      ]);
-      const json = await getJson(url);
+      const url = (fields) =>
+        withParams(`items/ffbbserver_poules/${encodeURIComponent(pouleId)}`, [
+          ['deep[rencontres][_limit]', '1000'],
+          ['fields[]', 'id'],
+          ['fields[]', 'nom'],
+          ...fields.map((field) => ['fields[]', `rencontres.${field}`]),
+        ]);
+      if (optionalAllowed) {
+        try {
+          const json = await getJson(url([...RENCONTRE_FIELDS, ...OPTIONAL_RENCONTRE_FIELDS]));
+          return json?.data ?? null;
+        } catch (err) {
+          if (err.status !== 403) {
+            throw err;
+          }
+          optionalAllowed = false;
+        }
+      }
+      const json = await getJson(url(RENCONTRE_FIELDS));
       return json?.data ?? null;
     },
 

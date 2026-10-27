@@ -6,9 +6,12 @@ import {
   indexLives,
   matchFromRencontre,
   parseFfbbDate,
+  parseHoraire,
   pickMatch,
   poulesOf,
+  teamGameStats,
   teamsFromPoules,
+  upcomingMatches,
 } from '../src/ffbb/parse.js';
 import { fixture } from './helpers/fakeFfbb.js';
 
@@ -156,4 +159,63 @@ test('the game shown: live first, then just played, then the next one', () => {
   const liveOf = indexLives([{ matchId: '2462003', matchStatus: 'LIVE', score_home: 3 }]);
   assert.equal(pickMatch(games, MONACO, liveOf, later).state, 'in');
   assert.equal(pickMatch([], MONACO, noLive, later), null);
+});
+
+test('the time kept apart in horaire completes a date at midnight', () => {
+  assert.deepEqual(parseHoraire(2030), { hours: 20, minutes: 30 });
+  assert.deepEqual(parseHoraire('20:30'), { hours: 20, minutes: 30 });
+  assert.deepEqual(parseHoraire('20h30'), { hours: 20, minutes: 30 });
+  assert.deepEqual(parseHoraire('930'), { hours: 9, minutes: 30 });
+  assert.equal(parseHoraire(0), null);
+  assert.equal(parseHoraire('2575'), null);
+  assert.equal(parseHoraire(null), null);
+  assert.deepEqual(parseFfbbDate('2026-11-08T00:00:00', 2000), {
+    iso: '2026-11-08T19:00:00.000Z',
+    timeKnown: true,
+  });
+  assert.deepEqual(parseFfbbDate('2026-11-08', '18:30'), {
+    iso: '2026-11-08T17:30:00.000Z',
+    timeKnown: true,
+  });
+  // A time in the date wins over horaire.
+  assert.equal(parseFfbbDate('2026-11-08 20:00:00', 1800).iso, '2026-11-08T19:00:00.000Z');
+});
+
+test('a game without its club is still recognized by the team entry', () => {
+  const team = teamsFromPoules([poule]).find((t) => t.id === MONACO);
+  const orphan = { ...games[2], idOrganismeEquipe1: null };
+  assert.equal(matchFromRencontre(orphan, MONACO), null, 'the bare club id is not enough');
+  assert.equal(matchFromRencontre(orphan, team).homeAway, 'home');
+});
+
+test('the games to come, soonest first, and the reading stats', () => {
+  const later = Date.parse('2026-10-28T08:00:00Z');
+  const extra = {
+    ...games[2],
+    id: 'later',
+    date_rencontre: '2026-11-08',
+    horaire: 2000,
+    gsId: null,
+  };
+  const all = [...games, extra];
+  const upcoming = upcomingMatches(all, MONACO, noLive, later);
+  assert.deepEqual(
+    upcoming.map((m) => [m.id, m.kickoff]),
+    [
+      ['200000002901003', '2026-11-01T19:00:00.000Z'],
+      ['later', '2026-11-08T19:00:00.000Z'],
+    ],
+  );
+  assert.deepEqual(upcomingMatches(all, MONACO, noLive, later, 1).length, 1);
+  // A postponed game is still to come, flagged.
+  const postponed = upcomingMatches([{ ...extra, remise: true }], MONACO, noLive, later);
+  assert.equal(postponed[0].statusName, 'POSTPONED');
+
+  const undated = { ...extra, id: 'undated', date_rencontre: 'bientôt' };
+  assert.deepEqual(teamGameStats([...all, undated], MONACO, later), {
+    games: 5,
+    upcoming: 2,
+    undated: 1,
+    sampleDate: 'bientôt',
+  });
 });

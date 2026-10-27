@@ -61,12 +61,14 @@ automatically: nothing to change from one season to the next.
 
 ## Devices
 
-Each followed team is a device with three read-only features:
+Each followed team is a device with four read-only features:
 
 - **Score**: the team's points in the current (or last) game;
 - **Opponent score**: the opponent's points;
 - **Game**: one line of text, e.g. `Live · Q3 05:12 · MON 56 – 50 PLB`,
-  `Final · MON 81 – 77 PLB · Win` or `Next · Sun 1 Nov, 20:00 · vs PLB`.
+  `Final · MON 81 – 77 PLB · Win` or `Next · Sun 1 Nov, 20:00 · vs PLB`;
+- **Next game**: the next game to come, even while a result is shown, e.g.
+  `Sun 8 Nov, 20:00 · at ASV`.
 
 Before a game the scores read 0: a condition "my team leads" does not stay
 true on the score of the previous game.
@@ -94,9 +96,10 @@ the result and the summary of the current or next game.
 
 ## Widgets
 
-- **Team game**: live score, period and clock, tip-off, opponent, Refresh
-  button.
+- **Team game**: live score, period and clock, tip-off, opponent, the next
+  three games, Refresh button.
 - **My teams**: every followed team, live games first.
+- **Next games**: the next games of every followed team, soonest first.
 
 ## How it works
 

@@ -74,3 +74,13 @@ test('find_team: unknown code, competition absent, FFBB down', async () => {
   ffbb.down = true;
   assert.match((await findTeams(tracker, { competition: 'LFB' })).fr, /n'a pas répondu/);
 });
+
+test('test_teams lists the games to come, or says what was read when there is none', async () => {
+  const { tracker, ffbb } = setup('ELITE:ASVEL');
+  ffbb.game('200000002901004').date_rencontre = 'prochainement';
+  const message = await testTeams(tracker);
+  assert.deepEqual(message.fr.split('\n'), [
+    'ASVEL (Betclic ELITE): Terminé · ASV 72 – 85 MON · Défaite',
+    '  aucun match à venir parmi les 2 match(s) lus, dont 1 à la date illisible (ex. « prochainement »)',
+  ]);
+});

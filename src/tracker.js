@@ -29,7 +29,9 @@ import {
   parseFfbbDate,
   pickMatch,
   poulesOf,
+  teamGameStats,
   teamsFromPoules,
+  upcomingMatches,
 } from './ffbb/parse.js';
 import { detectEvents, eventData } from './events.js';
 import { formatStatus } from './format.js';
@@ -128,6 +130,9 @@ export class Tracker {
         tracked.match = saved.match;
       }
       tracked.remindedFor ??= saved.remindedFor ?? null;
+      if (!tracked.upcoming?.length) {
+        tracked.upcoming = saved.upcoming ?? [];
+      }
     }
   }
 
@@ -155,6 +160,8 @@ export class Tracker {
               resolveError: null,
               candidates: [],
               reachable: null,
+              upcoming: saved?.upcoming ?? [],
+              stats: null,
             },
       );
     }
@@ -323,7 +330,7 @@ export class Tracker {
     const gamesOf = (tracked) =>
       tracked.info.pouleIds
         .flatMap((id) => poules.get(id)?.rencontres ?? [])
-        .filter((rencontre) => matchFromRencontre(rencontre, tracked.info.id) !== null);
+        .filter((rencontre) => matchFromRencontre(rencontre, tracked.info) !== null);
     const resolved = this.list().filter((t) => t.info);
     const someLive = resolved.some((t) =>
       gamesOf(t).some((rencontre) => {
@@ -351,7 +358,10 @@ export class Tracker {
         continue;
       }
       tracked.reachable = true;
-      const match = pickMatch(gamesOf(tracked), tracked.info.id, liveOf, now);
+      const games = gamesOf(tracked);
+      const match = pickMatch(games, tracked.info, liveOf, now);
+      tracked.upcoming = upcomingMatches(games, tracked.info, liveOf, now);
+      tracked.stats = teamGameStats(games, tracked.info, now);
       events.push(...this.apply(tracked, match, now));
     }
 
@@ -454,8 +464,13 @@ export class Tracker {
       if (tracked.info) {
         // A new season or phase: the same club, in new pools.
         const current = competition.teams.find((team) => team.id === tracked.info.id);
-        if (current && current.pouleIds.join() !== tracked.info.pouleIds.join()) {
-          tracked.info = { ...tracked.info, pouleIds: current.pouleIds };
+        if (
+          current &&
+          (current.pouleIds.join() !== tracked.info.pouleIds.join() ||
+            current.engagementIds.join() !== (tracked.info.engagementIds ?? []).join())
+        ) {
+          const { pouleIds, engagementIds } = current;
+          tracked.info = { ...tracked.info, pouleIds, engagementIds };
         }
         continue;
       }
@@ -466,8 +481,8 @@ export class Tracker {
       tracked.resolveError = found.error ?? null;
       tracked.candidates = found.candidates ?? [];
       if (found.team) {
-        const { id, name, abbreviation, pouleIds } = found.team;
-        tracked.info = { id, name, abbreviation, pouleIds };
+        const { id, name, abbreviation, pouleIds, engagementIds } = found.team;
+        tracked.info = { id, name, abbreviation, pouleIds, engagementIds };
         logger.info(`${tracked.spec.entry} is ${name} (FFBB club ${id})`);
       } else if (found.error !== before) {
         // Once per problem, not at every reading.
@@ -586,7 +601,15 @@ export class Tracker {
 
   snapshot() {
     return JSON.stringify(
-      this.list().map((t) => [t.key, t.info, t.match, t.remindedFor, t.reachable, t.resolveError]),
+      this.list().map((t) => [
+        t.key,
+        t.info,
+        t.match,
+        t.upcoming,
+        t.remindedFor,
+        t.reachable,
+        t.resolveError,
+      ]),
     );
   }
 
@@ -599,6 +622,7 @@ export class Tracker {
       teams[t.key] = {
         info: t.info,
         ...(t.match !== undefined && { match: t.match }),
+        upcoming: t.upcoming ?? [],
         remindedFor: t.remindedFor,
       };
     }

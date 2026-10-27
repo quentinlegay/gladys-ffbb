@@ -10,6 +10,19 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- The games to come: a "Next game" feature on each device, the next three
+  games in the "Team game" widget, a "Next games" widget for every followed
+  team, and the list in "Test the teams" — which also tells, when no game is
+  to come, how many games were read and whether some dates were unreadable.
+
+### Fixed
+
+- The tip-off time is read from `horaire` when the FFBB keeps the date alone,
+  postponed games are flagged, and a game whose club is not filled in is
+  still recognized by the team entry.
+
 ## [0.1.2] - 2026-10-27
 
 ## [0.1.1] - 2026-10-27
