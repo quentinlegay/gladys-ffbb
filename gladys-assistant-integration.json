@@ -999,6 +999,19 @@
       },
       "icon": "list",
       "action_timeout_seconds": 60
+    },
+    {
+      "key": "upcoming_matches",
+      "label": {
+        "en": "Next games",
+        "fr": "Prochains matchs"
+      },
+      "description": {
+        "en": "The next games of every followed team, soonest first.",
+        "fr": "Les prochains matchs de toutes les équipes suivies, du plus proche au plus lointain."
+      },
+      "icon": "calendar",
+      "action_timeout_seconds": 60
     }
   ]
 }

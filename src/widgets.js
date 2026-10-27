@@ -3,12 +3,14 @@
 //
 //   - team_match  one followed team, chosen in the widget settings: the score
 //                 (live tiles bound to the device features), the period and
-//                 clock, the tip-off, home or away, and a Refresh button;
+//                 clock, the tip-off, home or away, the next games and a
+//                 Refresh button;
 //   - my_teams    every followed team in one list, with a badge (LIVE, the
-//                 result, or NEXT).
+//                 result, or NEXT);
+//   - upcoming_matches  the next games of every followed team, soonest first.
 //
 // The content is declarative, rendered by the core with its own theme. The
-// tracker nudges both widgets (requestWidgetRefresh) whenever something shown
+// tracker nudges every widget (requestWidgetRefresh) whenever something shown
 // changed; the TTL is only a safety net.
 // -----------------------------------------------------------------------------
 
@@ -27,7 +29,8 @@ const logger = createLogger({ name: 'widgets' });
 
 export const TEAM_MATCH_WIDGET = 'team_match';
 export const MY_TEAMS_WIDGET = 'my_teams';
-export const WIDGET_KEYS = [TEAM_MATCH_WIDGET, MY_TEAMS_WIDGET];
+export const UPCOMING_WIDGET = 'upcoming_matches';
+export const WIDGET_KEYS = [TEAM_MATCH_WIDGET, MY_TEAMS_WIDGET, UPCOMING_WIDGET];
 
 const REFRESH_ACTION = 'refresh';
 const LIVE_TTL = 30;
@@ -102,6 +105,64 @@ function stateRow(match, config, now) {
   };
 }
 
+/** A card-list of games to come, each with the team it belongs to. */
+function upcomingList(entries, config, { withTeam }) {
+  return {
+    type: 'card-list',
+    display: 'list',
+    items: entries.slice(0, MAX_LIST_ITEMS).map(({ tracked, match }) => ({
+      title: clip(
+        match.homeAway === 'home'
+          ? `${tracked.info.name} – ${match.opponent.name}`
+          : `${match.opponent.name} – ${tracked.info.name}`,
+        60,
+      ),
+      subtitle: both(
+        (language) =>
+          [
+            formatKickoff(match, language, config.timezone),
+            withTeam ? tracked.spec.competitionName : match.venue,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        60,
+      ),
+      badge: {
+        text: multilingual((language) => HOME_AWAY[language][match.homeAway]),
+        color: match.homeAway === 'home' ? WIDGET_COLORS.SUCCESS : WIDGET_COLORS.NEUTRAL,
+      },
+    })),
+  };
+}
+
+function upcomingContent(tracker, config) {
+  const entries = tracker
+    .list()
+    .filter((t) => t.info)
+    .flatMap((tracked) => (tracked.upcoming ?? []).map((match) => ({ tracked, match })))
+    .sort((a, b) => Date.parse(a.match.kickoff) - Date.parse(b.match.kickoff));
+  if (entries.length === 0) {
+    return {
+      ttl_seconds: IDLE_TTL,
+      components: [
+        {
+          type: 'text',
+          variant: 'body',
+          text: {
+            en: 'No game to come for the followed teams.',
+            fr: 'Aucun match à venir pour les équipes suivies.',
+          },
+        },
+        refreshButton(),
+      ],
+    };
+  }
+  return {
+    ttl_seconds: IDLE_TTL,
+    components: [upcomingList(entries, config, { withTeam: true }), refreshButton()],
+  };
+}
+
 function refreshButton() {
   return {
     type: 'button',
@@ -143,6 +204,11 @@ function teamMatchContent(gladys, tracked, config, now) {
     ? `${shortName(match.team)} ${match.team.score} – ${match.opponent.score} ${shortName(match.opponent)}`
     : `${shortName(match.team)} – ${shortName(match.opponent)}`;
   const caption = [tracked.spec.competitionName, match.venue].filter(Boolean).join(' · ');
+  // The games to come after the one shown, three at most.
+  const later = (tracked.upcoming ?? [])
+    .filter((next) => next.id !== match.id)
+    .slice(0, 3)
+    .map((next) => ({ tracked, match: next }));
 
   // Live tiles follow the published states in real time, but only exist once
   // the user created the device; before that, the scores are plain values.
@@ -189,6 +255,16 @@ function teamMatchContent(gladys, tracked, config, now) {
           },
         ],
       },
+      ...(later.length > 0
+        ? [
+            {
+              type: 'text',
+              variant: 'caption',
+              text: { en: 'Next games', fr: 'Prochains matchs' },
+            },
+            upcomingList(later, config, { withTeam: false }),
+          ]
+        : []),
       refreshButton(),
     ],
   };
@@ -284,6 +360,13 @@ export function createWidgets(tracker) {
           };
         }
         return teamMatchContent(gladys, tracked, config, now());
+      },
+      action: (_gladys, { actionKey }) => refreshAction(actionKey),
+    },
+    [UPCOMING_WIDGET]: {
+      async get(_gladys, { config }) {
+        logger.debug(`onWidgetGet <- ${UPCOMING_WIDGET}`);
+        return upcomingContent(tracker, config);
       },
       action: (_gladys, { actionKey }) => refreshAction(actionKey),
     },

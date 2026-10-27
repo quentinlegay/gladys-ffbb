@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from '../src/config.js';
 import { Tracker } from '../src/tracker.js';
-import { createWidgets, MY_TEAMS_WIDGET, TEAM_MATCH_WIDGET } from '../src/widgets.js';
+import {
+  createWidgets,
+  MY_TEAMS_WIDGET,
+  TEAM_MATCH_WIDGET,
+  UPCOMING_WIDGET,
+} from '../src/widgets.js';
 import { createFakeFfbb } from './helpers/fakeFfbb.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 
@@ -83,4 +88,27 @@ test('the refresh button reads again; an unknown action fails', async () => {
   const message = await widgets[MY_TEAMS_WIDGET].action(gladys, { actionKey: 'refresh', config });
   assert.deepEqual(message, { en: 'Scores refreshed', fr: 'Scores actualisés' });
   await assert.rejects(widgets[MY_TEAMS_WIDGET].action(gladys, { actionKey: 'nope', config }));
+});
+
+test('upcoming_matches lists the next games of every team, soonest first', async () => {
+  const { gladys, config, widgets } = await setup({ now: '2026-10-28T10:00Z', live: false });
+  const content = await widgets[UPCOMING_WIDGET].get(gladys, { config });
+  assert.deepEqual(validateWidgetContent(content), []);
+  const items = content.components[0].items;
+  assert.deepEqual(
+    items.map((i) => i.title),
+    ['ASVEL – Paris Basketball', 'Monaco – Paris Levallois'],
+  );
+  assert.deepEqual(items[0].subtitle, {
+    en: 'Sun 1 Nov, 18:00 · Betclic ELITE',
+    fr: 'dim. 1 nov., 18:00 · Betclic ELITE',
+  });
+  assert.deepEqual(items[0].badge.text, { en: 'home', fr: 'domicile' });
+});
+
+test('upcoming_matches without any game to come', async () => {
+  const { gladys, config, widgets } = await setup({ now: '2026-11-05T10:00Z', live: false });
+  const content = await widgets[UPCOMING_WIDGET].get(gladys, { config });
+  assert.deepEqual(validateWidgetContent(content), []);
+  assert.match(content.components[0].text.fr, /Aucun match à venir/);
 });
