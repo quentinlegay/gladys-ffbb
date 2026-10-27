@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-27
+
 ### Added
 
 - Follow French basketball teams written `COMPETITION:TEAM`: Betclic ELITE,
