@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-27
+
 ## [0.1.1] - 2026-10-27
 
 ### Added
@@ -27,3 +29,6 @@ the notes of the version's GitHub Release.
   its name; when it is not found at all, "Find a team" lists the FFBB
   competitions of the season with the codes to write, and the search is
   retried after an hour instead of a day.
+
+[Unreleased]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.1...v0.1.2
