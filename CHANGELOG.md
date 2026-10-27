@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-27
+
 ### Added
 
 - The games to come: a "Next game" feature on each device, the next three
@@ -43,5 +45,6 @@ the notes of the version's GitHub Release.
   competitions of the season with the codes to write, and the search is
   retried after an hour instead of a day.
 
-[Unreleased]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/quentinlegay/gladys-ffbb/compare/v0.1.1...v0.1.2
