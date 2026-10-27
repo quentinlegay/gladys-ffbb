@@ -34,6 +34,7 @@ import {
 import { detectEvents, eventData } from './events.js';
 import { formatStatus } from './format.js';
 import { buildTeamDevice, teamExternalIds, teamStates } from './devices/team.js';
+import { isSeniorName, matchesName } from './competitions.js';
 
 const logger = createLogger({ name: 'tracker' });
 
@@ -42,6 +43,10 @@ const HOUR = 60 * MINUTE;
 // The teams and pools of a competition change a few times a season (a new
 // phase, the playoffs): one read a day is plenty.
 const COMPETITION_TTL = 24 * HOUR;
+// A competition not found is looked for again sooner: the user may be fixing it.
+const NOT_FOUND_TTL = HOUR;
+// Competitions listed by "Find a team" when ours is not found.
+const MAX_SUGGESTIONS = 25;
 // A game is worth live polling from shortly before its tip-off until this
 // long after it (overtimes, late starts, the FFBB entering the result).
 const LIVE_BEFORE = 15 * MINUTE;
@@ -51,6 +56,15 @@ const LIVE_AFTER = 4 * HOUR;
 const REPUBLISH_AFTER = 6 * HOUR;
 const MIN_DELAY = 15_000;
 const MAX_ENTRIES_PER_REQUEST = 100;
+
+/** What the logs and "Find a team" show of a FFBB competition. */
+function describeCompetition(competition) {
+  return {
+    id: String(competition.id ?? ''),
+    name: String(competition.nom ?? '').trim(),
+    code: String(competition.code ?? '').trim(),
+  };
+}
 
 function entryKey(spec) {
   return `${spec.code}:${spec.team.toLowerCase()}`;
@@ -357,30 +371,43 @@ export class Tracker {
   /**
    * The current season of a competition: its teams and pools, read once a
    * day. `freshPoules` holds the pools read for it during this call (none
-   * when served from the cache). Null when the FFBB cannot be read and
-   * nothing is cached.
+   * when served from the cache). When the competition is not found,
+   * `suggestions` lists the FFBB competitions of the season whose name
+   * contains one of its search terms, with their codes. Null when the FFBB
+   * cannot be read and nothing is cached.
    */
   async competition(spec, now) {
     const cached = this.competitionCache.get(spec.code);
-    if (cached && now - cached.fetchedAt < COMPETITION_TTL) {
+    const ttl = cached?.found ? COMPETITION_TTL : NOT_FOUND_TTL;
+    if (cached && now - cached.fetchedAt < ttl) {
       return { ...cached, freshPoules: new Map() };
     }
     try {
-      const competitions = currentCompetitions(await this.client.competitions(spec.ffbbCodes));
-      const pouleIds = poulesOf(competitions);
+      let competitions = currentCompetitions(await this.client.competitions(spec.ffbbCodes));
+      let suggestions = [];
+      if (competitions.length === 0) {
+        ({ competitions, suggestions } = await this.competitionsByName(spec));
+      }
       const poules = new Map();
-      for (const pouleId of pouleIds) {
+      for (const pouleId of poulesOf(competitions)) {
         poules.set(pouleId, await this.client.poule(pouleId));
       }
       const entry = {
         found: competitions.length > 0,
+        competitions: competitions.map(describeCompetition),
         teams: teamsFromPoules([...poules.values()]),
+        suggestions,
         fetchedAt: now,
       };
       this.competitionCache.set(spec.code, entry);
-      if (!entry.found) {
+      if (entry.found) {
+        const names = entry.competitions.map((c) => `${c.name} (code ${c.code}, id ${c.id})`);
+        logger.info(`${spec.competitionName}: ${names.join(', ')}`);
+      } else {
+        const seen = suggestions.map((c) => `${c.name} (code ${c.code})`).join(', ') || 'none';
         logger.warn(
-          `${spec.competitionName}: no competition with code ${spec.ffbbCodes.join('/')}`,
+          `${spec.competitionName}: no competition with code ${spec.ffbbCodes.join('/')} ` +
+            `nor a matching name; FFBB competitions seen: ${seen}`,
         );
       }
       return { ...entry, freshPoules: poules };
@@ -388,6 +415,31 @@ export class Tracker {
       logger.warn(`${spec.competitionName}: competition unavailable (${err.message})`);
       return cached ? { ...cached, freshPoules: new Map() } : null;
     }
+  }
+
+  /**
+   * Fallback of competition(): search the FFBB by name. Returns the current
+   * season's competitions whose name is the one expected, and every current
+   * competition seen on the way (the suggestions shown by "Find a team").
+   */
+  async competitionsByName(spec) {
+    const terms = spec.searchTerms?.length ? spec.searchTerms : [spec.code.toLowerCase()];
+    const seen = new Map();
+    for (const term of terms) {
+      for (const competition of await this.client.searchCompetitions(term)) {
+        seen.set(String(competition.id), competition);
+      }
+    }
+    const current = currentCompetitions([...seen.values()]);
+    const competitions = spec.pattern ? current.filter((c) => matchesName(spec, c.nom)) : [];
+    const suggestions = [];
+    for (const competition of current.filter((c) => isSeniorName(c.nom)).map(describeCompetition)) {
+      if (!suggestions.some((s) => s.code === competition.code && s.name === competition.name)) {
+        suggestions.push(competition);
+      }
+    }
+    suggestions.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return { competitions, suggestions: suggestions.slice(0, MAX_SUGGESTIONS) };
   }
 
   /** Turn what the user typed into FFBB teams; keep known teams' pools current. */

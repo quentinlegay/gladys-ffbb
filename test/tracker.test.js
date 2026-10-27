@@ -205,9 +205,44 @@ test('an unknown team, an ambiguous one and a bad entry are reported, not follow
 });
 
 test('a competition the FFBB does not know this season', async () => {
-  const { tracker } = setup({ teams: 'NM1:Rouen' });
+  const { tracker, ffbb } = setup({ teams: 'NM1:Rouen' });
   await tracker.refresh();
   assert.equal(tracker.list()[0].resolveError, 'competition_not_found');
+  // Searched by code, then by name.
+  assert.deepEqual(ffbb.calls, ['competitions NM1', 'search nationale', 'search nm1']);
+});
+
+test('a competition under another code is found by its name', async () => {
+  const { tracker, ffbb, gladys } = setup({ teams: 'ELITE:Monaco' });
+  const [current, previous] = ffbb.competitionsByCode.ELITE;
+  ffbb.competitionsByCode = {};
+  ffbb.otherCompetitions = [
+    { ...current, nom: 'BETCLIC ELITE', code: 'LNBM' },
+    { ...previous, nom: 'BETCLIC ELITE', code: 'LNBM' },
+    {
+      id: 1,
+      nom: 'ESPOIRS BETCLIC ELITE',
+      code: 'ESP',
+      saison: current.saison,
+      poules: [{ id: 99 }],
+    },
+  ];
+  await tracker.refresh();
+  assert.equal(tracker.list()[0].info?.name, 'Monaco');
+  assert.ok(!ffbb.calls.includes('poule 99'), 'the youth competition is left aside');
+  assert.equal(gladys.discovered.at(-1)[0].external_id, MONACO_DEVICE);
+});
+
+test('a competition not found is looked for again after an hour, not a day', async () => {
+  const { tracker, ffbb, clock } = setup({ teams: 'NM1:Rouen' });
+  await tracker.refresh();
+  ffbb.calls.length = 0;
+  clock.now += 30 * 60_000;
+  await tracker.refresh();
+  assert.deepEqual(ffbb.calls, []);
+  clock.now += 31 * 60_000;
+  await tracker.refresh();
+  assert.equal(ffbb.calls[0], 'competitions NM1');
 });
 
 test('an outage keeps the last game and flags the device unreachable', async () => {

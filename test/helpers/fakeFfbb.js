@@ -20,6 +20,8 @@ export function createFakeFfbb() {
     competitionsByCode: { ELITE: fixture('elite-competitions').data },
     /** pool id -> pool with its games. */
     poules: { [String(elitePoule.id)]: elitePoule },
+    /** Competitions only found by name (any code). */
+    otherCompetitions: [],
     liveGames: [],
     /** Set to make every call fail, like an outage. */
     down: false,
@@ -28,6 +30,14 @@ export function createFakeFfbb() {
       this.calls.push(`competitions ${codes.join(',')}`);
       if (this.down) throw new Error('FFBB unreachable: test outage');
       return clone(codes.flatMap((code) => this.competitionsByCode[code] ?? []));
+    },
+
+    /** Every competition known to the fake whose name contains `term`. */
+    async searchCompetitions(term) {
+      this.calls.push(`search ${term}`);
+      if (this.down) throw new Error('FFBB unreachable: test outage');
+      const all = [...Object.values(this.competitionsByCode).flat(), ...this.otherCompetitions];
+      return clone(all.filter((c) => c.nom.toLowerCase().includes(term.toLowerCase())));
     },
 
     async poule(id) {
