@@ -1,0 +1,21 @@
+{
+  "data": [
+    {
+      "id": 200000002800001,
+      "nom": "Betclic ELITE",
+      "code": "ELITE",
+      "sexe": "M",
+      "saison": { "id": 2026, "actif": true, "debut": "2026-07-01", "libelle": "2026-2027" },
+      "poules": [{ "id": 200000003010001, "nom": "Poule A" }],
+      "phases": [{ "poules": [{ "id": 200000003010001, "nom": "Poule A" }] }]
+    },
+    {
+      "id": 200000002700001,
+      "nom": "Betclic ELITE",
+      "code": "ELITE",
+      "sexe": "M",
+      "saison": { "id": 2025, "actif": false, "debut": "2025-07-01", "libelle": "2025-2026" },
+      "poules": [{ "id": 200000002910001, "nom": "Poule A" }]
+    }
+  ]
+}

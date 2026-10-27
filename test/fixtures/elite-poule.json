@@ -1,0 +1,112 @@
+{
+  "data": {
+    "id": 200000003010001,
+    "nom": "Poule A",
+    "rencontres": [
+      {
+        "id": 200000002901001,
+        "numeroJournee": 5,
+        "date_rencontre": "2026-10-18 20:00:00",
+        "joue": 1,
+        "resultatEquipe1": "85",
+        "resultatEquipe2": "72",
+        "nomEquipe1": "AS MONACO BASKET",
+        "nomEquipe2": "LDLC ASVEL",
+        "idEngagementEquipe1": {
+          "id": 9001,
+          "nom": "AS MONACO BASKET",
+          "nomUsuel": "Monaco",
+          "codeAbrege": "MON"
+        },
+        "idEngagementEquipe2": {
+          "id": 9002,
+          "nom": "LDLC ASVEL",
+          "nomUsuel": "ASVEL",
+          "codeAbrege": "ASV"
+        },
+        "idOrganismeEquipe1": { "id": 10001 },
+        "idOrganismeEquipe2": { "id": 10002 },
+        "salle": { "libelle": "Salle Gaston Médecin", "commune": { "libelle": "Monaco" } },
+        "gsId": { "matchId": "2462001", "currentStatus": "FINISHED", "currentPeriod": "Q4" }
+      },
+      {
+        "id": 200000002901002,
+        "numeroJournee": 6,
+        "date_rencontre": "2026-10-25 18:30:00",
+        "joue": 1,
+        "resultatEquipe1": "90",
+        "resultatEquipe2": "88",
+        "nomEquipe1": "PARIS BASKETBALL",
+        "nomEquipe2": "AS MONACO BASKET",
+        "idEngagementEquipe1": {
+          "id": 9003,
+          "nom": "PARIS BASKETBALL",
+          "nomUsuel": "Paris Basketball",
+          "codeAbrege": "PAR"
+        },
+        "idEngagementEquipe2": {
+          "id": 9001,
+          "nom": "AS MONACO BASKET",
+          "nomUsuel": "Monaco",
+          "codeAbrege": "MON"
+        },
+        "idOrganismeEquipe1": { "id": 10003 },
+        "idOrganismeEquipe2": { "id": 10001 },
+        "salle": { "libelle": "Adidas Arena", "commune": { "libelle": "Paris" } },
+        "gsId": { "matchId": "2462002" }
+      },
+      {
+        "id": 200000002901003,
+        "numeroJournee": 7,
+        "date_rencontre": "2026-11-01 20:00:00",
+        "joue": 0,
+        "resultatEquipe1": null,
+        "resultatEquipe2": null,
+        "nomEquipe1": "AS MONACO BASKET",
+        "nomEquipe2": "PARIS LEVALLOIS",
+        "idEngagementEquipe1": {
+          "id": 9001,
+          "nom": "AS MONACO BASKET",
+          "nomUsuel": "Monaco",
+          "codeAbrege": "MON"
+        },
+        "idEngagementEquipe2": {
+          "id": 9004,
+          "nom": "PARIS LEVALLOIS",
+          "nomUsuel": "Paris Levallois",
+          "codeAbrege": "PLB"
+        },
+        "idOrganismeEquipe1": { "id": 10001 },
+        "idOrganismeEquipe2": { "id": 10004 },
+        "salle": { "libelle": "Salle Gaston Médecin", "commune": { "libelle": "Monaco" } },
+        "gsId": { "matchId": "2462003" }
+      },
+      {
+        "id": 200000002901004,
+        "numeroJournee": 7,
+        "date_rencontre": "2026-11-01 18:00:00",
+        "joue": 0,
+        "resultatEquipe1": null,
+        "resultatEquipe2": null,
+        "nomEquipe1": "LDLC ASVEL",
+        "nomEquipe2": "PARIS BASKETBALL",
+        "idEngagementEquipe1": {
+          "id": 9002,
+          "nom": "LDLC ASVEL",
+          "nomUsuel": "ASVEL",
+          "codeAbrege": "ASV"
+        },
+        "idEngagementEquipe2": {
+          "id": 9003,
+          "nom": "PARIS BASKETBALL",
+          "nomUsuel": "Paris Basketball",
+          "codeAbrege": "PAR"
+        },
+        "idOrganismeEquipe1": { "id": 10002 },
+        "idOrganismeEquipe2": { "id": 10003 },
+        "salle": { "libelle": "Astroballe", "commune": { "libelle": "Villeurbanne" } },
+        "gsId": { "matchId": "2462004" }
+      }
+    ]
+  }
+}
