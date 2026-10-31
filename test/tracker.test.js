@@ -313,3 +313,16 @@ test('no game to come: the next-match feature says so', async () => {
   await tracker.refresh();
   assert.deepEqual(statesOf(gladys, ':next-match'), ['Aucun match prévu']);
 });
+
+test('Betclic ELITE as the FFBB has it: only friendlies, the user is told why', async () => {
+  const { tracker, ffbb } = setup({ teams: 'ELITE:ASVEL' });
+  const saison = { actif: true, debut: '2026-07-01' };
+  ffbb.competitionsByCode = {};
+  ffbb.otherCompetitions = [
+    { id: 1, nom: 'AMICALE BETCLIC ELITE', code: 'AMIBETCLIC ELITE', saison, poules: [{ id: 2 }] },
+    { id: 3, nom: 'RENCONTRE AMICALE BETCLIC ELITE', code: 'RA BETCLIC ELITE', saison },
+  ];
+  await tracker.refresh();
+  assert.equal(tracker.list()[0].resolveError, 'lnb_not_published');
+  assert.ok(!ffbb.calls.includes('poule 2'), 'friendly pools are not read');
+});

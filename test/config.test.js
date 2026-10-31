@@ -45,6 +45,15 @@ test('the senior competitions are recognized by their FFBB names', () => {
   assert.ok(is('ELITE', 'ELITE'));
   assert.ok(!is('ELITE', 'ELITE 2'));
   assert.ok(!is('ELITE', 'ESPOIRS BETCLIC ELITE'));
+  // The friendlies the FFBB publishes for the LNB championships.
+  assert.ok(!is('ELITE', 'AMICALE BETCLIC ELITE'));
+  assert.ok(!is('ELITE', 'RENCONTRE AMICALE BETCLIC ELITE'));
+  assert.ok(!is('ELITE', 'M. AMICAUX SM - BETCLIC Elite - ELITE 2 - NM1'));
+  assert.ok(!is('ELITE', 'AMICAL BETCLIC ELITE'));
+  assert.ok(!is('ELITE2', 'AMICALES ELITE 2'));
+  assert.ok(!is('LFB', 'AMICALES LA BOULANGERE WONDERLIGUE'));
+  assert.ok(is('LFB', 'La Boulangère Wonderligue'));
+  assert.equal(parseCompetition('LBWL').code, 'LFB');
   assert.ok(is('ELITE2', 'ÉLITE 2'));
   assert.ok(is('ELITE2', 'PRO B'));
   assert.ok(is('NM1', 'NATIONALE MASCULINE 1'));

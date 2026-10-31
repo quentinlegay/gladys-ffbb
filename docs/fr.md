@@ -43,6 +43,11 @@ championnats nationaux (Nationale 1, 2, 3…). Pas de compte, pas de clé d'API.
 
 ## Compétitions
 
+> **Betclic ELITE et ELITE 2 ne sont pas disponibles pour l'instant.** Ces
+> championnats sont gérés par la LNB, et la FFBB n'en publie que les matchs
+> amicaux. Les équipes de ces championnats ne peuvent donc pas encore être
+> suivies : il faudra une source de données LNB.
+
 | Code     | Compétition                           | Aussi accepté     |
 | -------- | ------------------------------------- | ----------------- |
 | `ELITE`  | Betclic ELITE (ex-Pro A / Jeep ÉLITE) | `PROA`, `BETCLIC` |

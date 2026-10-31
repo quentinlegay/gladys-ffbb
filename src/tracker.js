@@ -476,7 +476,7 @@ export class Tracker {
       }
       const found = competition.found
         ? findTeam(competition.teams, tracked.spec.team)
-        : { error: 'competition_not_found' };
+        : { error: tracked.spec.lnb ? 'lnb_not_published' : 'competition_not_found' };
       const before = tracked.resolveError;
       tracked.resolveError = found.error ?? null;
       tracked.candidates = found.candidates ?? [];

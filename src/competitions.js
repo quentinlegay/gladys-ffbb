@@ -30,14 +30,19 @@ function nationale(sex, level) {
 }
 
 export const COMPETITIONS = {
-  // Men — professional (LNB).
+  // Men — professional (LNB). The LNB runs these championships itself: the
+  // FFBB only publishes their friendly games (seen in Oct. 2026: "AMICALE
+  // BETCLIC ELITE", "RENCONTRE AMICALE ELITE 2"…). `lnb` lets the user know
+  // why they are not found instead of a generic "not found".
   ELITE: {
+    lnb: true,
     ffbbCodes: ['ELITE', 'PROA'],
     name: 'Betclic ELITE',
     searchTerms: ['elite', 'pro a'],
     pattern: /\bbetclic\b|^(lnb )?(jeep )?elite( masculine)?$|\bpro a\b/,
   },
   ELITE2: {
+    lnb: true,
     ffbbCodes: ['ELIT2', 'ELITE2', 'PROB'],
     name: 'ELITE 2',
     searchTerms: ['elite', 'pro b'],
@@ -49,7 +54,8 @@ export const COMPETITIONS = {
   NM3: { ffbbCodes: ['NM3'], name: 'Nationale 3', ...nationale('M', 3) },
   // Women.
   LFB: {
-    ffbbCodes: ['LFB', 'LF1'],
+    // LBWL: the code seen at the FFBB in Oct. 2026.
+    ffbbCodes: ['LBWL', 'LFB', 'LF1'],
     name: 'La Boulangère Wonderligue',
     searchTerms: ['ligue', 'lfb', 'wonderligue'],
     pattern: /\bwonderligue\b|\bboulangere\b|^(lfb|ligue feminine( de basket( ?ball)?)?)$/,
@@ -65,8 +71,10 @@ export const COMPETITIONS = {
   NF3: { ffbbCodes: ['NF3'], name: 'Nationale 3 Féminine', ...nationale('F', 3) },
 };
 
-// Youth and reserve competitions share words with the senior ones.
-const NOT_SENIOR = /\b(u ?\d{2}|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?)\b/;
+// Youth, reserve and friendly competitions share words with the senior
+// championships ("AMICALE BETCLIC ELITE", "M. AMICAUX SM - BETCLIC Elite").
+const NOT_SENIOR =
+  /\b(u ?\d{2}|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?|amica(l|le|les|ux))\b/;
 
 // What users write instead of our codes: the former names of the leagues.
 const ALIASES = {

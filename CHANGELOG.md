@@ -21,6 +21,10 @@ the notes of the version's GitHub Release.
 
 ### Fixed
 
+- Friendly competitions ("AMICALE BETCLIC ELITE"…) are no longer taken for
+  the championship. Betclic ELITE and ELITE 2, which the FFBB does not
+  publish (the LNB runs them), now say so instead of showing only past
+  friendlies. La Boulangère Wonderligue is found by its FFBB code, LBWL.
 - The tip-off time is read from `horaire` when the FFBB keeps the date alone,
   postponed games are flagged, and a game whose club is not filled in is
   still recognized by the team entry.
