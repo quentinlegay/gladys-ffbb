@@ -42,6 +42,10 @@ The data comes from the public API of the French basketball federation
 
 ## Competitions
 
+> **Betclic ELITE and ELITE 2 are not available yet.** These championships are
+> run by the LNB, and the FFBB only publishes their friendly games. Their
+> teams cannot be followed yet: that needs an LNB data source.
+
 | Code     | Competition                                 | Also accepted     |
 | -------- | ------------------------------------------- | ----------------- |
 | `ELITE`  | Betclic ELITE (formerly Pro A / Jeep ÉLITE) | `PROA`, `BETCLIC` |

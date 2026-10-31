@@ -84,3 +84,13 @@ test('test_teams lists the games to come, or says what was read when there is no
     '  aucun match à venir parmi les 2 match(s) lus, dont 1 à la date illisible (ex. « prochainement »)',
   ]);
 });
+
+test('find_team on an LNB championship the FFBB does not publish', async () => {
+  const { tracker, ffbb } = setup('');
+  ffbb.competitionsByCode = {};
+  const message = await findTeams(tracker, { competition: 'ELITE2' });
+  assert.equal(
+    message.fr,
+    "ELITE 2: ce championnat est géré par la LNB, la FFBB n'en publie que les matchs amicaux",
+  );
+});

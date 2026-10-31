@@ -111,6 +111,7 @@ export function parseTeams(text) {
       code: competition.code,
       ffbbCodes: competition.ffbbCodes,
       searchTerms: competition.searchTerms,
+      lnb: Boolean(competition.lnb),
       pattern: competition.pattern,
       competitionName: competition.name,
       team,

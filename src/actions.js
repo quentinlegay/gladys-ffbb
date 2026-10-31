@@ -28,6 +28,10 @@ const REASONS = {
     en: 'unknown competition code (see the documentation)',
     fr: 'code de compétition inconnu (voir la documentation)',
   },
+  lnb_not_published: {
+    en: 'this championship is run by the LNB, the FFBB only publishes its friendly games',
+    fr: "ce championnat est géré par la LNB, la FFBB n'en publie que les matchs amicaux",
+  },
   competition_not_found: {
     en: 'competition not found at the FFBB this season, "Find a team" lists the FFBB codes',
     fr: 'compétition introuvable à la FFBB cette saison, « Trouver une équipe » liste les codes FFBB',
@@ -164,6 +168,11 @@ export async function findTeams(tracker, fields) {
   );
   if (!found) {
     return { ...REASONS.unreachable };
+  }
+  if (!found.found && competition.lnb) {
+    return multilingual(
+      (language) => `${competition.name}: ${REASONS.lnb_not_published[language]}`,
+    );
   }
   if (!found.found) {
     return notFound(competition, found.suggestions ?? []);
