@@ -413,6 +413,9 @@ export class Tracker {
       if (entry.found) {
         const names = entry.competitions.map((c) => `${c.name} (code ${c.code}, id ${c.id})`);
         logger.info(`${spec.competitionName}: ${names.join(', ')}`);
+      } else if (spec.lnb) {
+        // Expected: the LNB runs it, the FFBB only has its friendlies.
+        logger.info(`${spec.competitionName}: not published by the FFBB (run by the LNB)`);
       } else {
         const seen = suggestions.map((c) => `${c.name} (code ${c.code})`).join(', ') || 'none';
         logger.warn(

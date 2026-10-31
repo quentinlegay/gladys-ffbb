@@ -74,7 +74,7 @@ export const COMPETITIONS = {
 // Youth, reserve and friendly competitions share words with the senior
 // championships ("AMICALE BETCLIC ELITE", "M. AMICAUX SM - BETCLIC Elite").
 const NOT_SENIOR =
-  /\b(u ?\d{2}|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?|amica(l|le|les|ux))\b/;
+  /\b(u ?\d{2}[mf]?|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?|amica(l|le|les|ux))\b/;
 
 // What users write instead of our codes: the former names of the leagues.
 const ALIASES = {
