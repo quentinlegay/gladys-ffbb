@@ -1,6 +1,6 @@
 {
   "name": "gladys-ffbb",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Gladys Assistant external integration that follows French basketball teams (Betclic ELITE, ELITE 2, Nationale...) through the FFBB API.",
   "type": "module",
