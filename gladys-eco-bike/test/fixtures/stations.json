@@ -1,0 +1,49 @@
+{
+  "total_count": 3,
+  "results": [
+    {
+      "id": 75015001,
+      "latitude": "4884210",
+      "longitude": "229540",
+      "cp": "75015",
+      "pop": "R",
+      "adresse": "12 rue de Vaugirard",
+      "ville": "Paris",
+      "geom": { "lon": 2.2954, "lat": 48.8421 },
+      "gazole_maj": "2026-11-01T08:12:00+00:00",
+      "gazole_prix": 1.729,
+      "sp95_maj": null,
+      "sp95_prix": null,
+      "e10_maj": "2026-11-01T08:12:00+00:00",
+      "e10_prix": 1.789,
+      "sp98_maj": "2026-11-01T08:12:00+00:00",
+      "sp98_prix": 1.869,
+      "e85_prix": null,
+      "gplc_prix": null,
+      "departement": "Paris",
+      "region": "Île-de-France"
+    },
+    {
+      "id": 92100002,
+      "cp": "92100",
+      "adresse": "45  avenue Victor Hugo",
+      "ville": "Boulogne-Billancourt",
+      "geom": { "lon": 2.24, "lat": 48.835 },
+      "gazole_maj": "2026-10-31T17:00:00+00:00",
+      "gazole_prix": 1.659,
+      "e10_prix": 1.749,
+      "sp98_prix": null,
+      "e85_prix": 0.799
+    },
+    {
+      "id": 75007003,
+      "cp": "75007",
+      "adresse": "3 quai Branly",
+      "ville": "Paris",
+      "geom": { "lon": 2.35, "lat": 48.856 },
+      "gazole_prix": null,
+      "e10_prix": 1.819,
+      "sp98_prix": 1.899
+    }
+  ]
+}

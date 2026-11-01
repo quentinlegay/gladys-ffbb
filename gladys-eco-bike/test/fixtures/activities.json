@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1001,
+    "name": "Vélotaf du matin",
+    "distance": 7215.4,
+    "moving_time": 1500,
+    "elapsed_time": 1620,
+    "type": "Ride",
+    "sport_type": "Ride",
+    "start_date": "2026-10-27T06:52:11Z",
+    "start_date_local": "2026-10-27T07:52:11Z",
+    "timezone": "(GMT+01:00) Europe/Paris",
+    "trainer": false,
+    "commute": true,
+    "manual": false,
+    "private": true,
+    "gear_id": "b123"
+  },
+  {
+    "id": 1002,
+    "name": "Retour du boulot",
+    "distance": 7480.0,
+    "moving_time": 1560,
+    "elapsed_time": 1700,
+    "type": "EBikeRide",
+    "sport_type": "EBikeRide",
+    "start_date": "2026-10-27T16:40:00Z",
+    "start_date_local": "2026-10-27T17:40:00Z",
+    "trainer": false,
+    "commute": true
+  },
+  {
+    "id": 1003,
+    "name": "Sortie longue du dimanche",
+    "distance": 82300.0,
+    "moving_time": 10800,
+    "type": "Ride",
+    "sport_type": "Ride",
+    "start_date": "2026-10-25T07:00:00Z",
+    "start_date_local": "2026-10-25T09:00:00Z",
+    "trainer": false,
+    "commute": false
+  },
+  {
+    "id": 1004,
+    "name": "Home trainer",
+    "distance": 25000.0,
+    "type": "VirtualRide",
+    "sport_type": "VirtualRide",
+    "start_date": "2026-10-28T18:00:00Z",
+    "start_date_local": "2026-10-28T19:00:00Z",
+    "trainer": true,
+    "commute": false
+  },
+  {
+    "id": 1005,
+    "name": "Marche jusqu'à la gare",
+    "distance": 1800.0,
+    "type": "Walk",
+    "sport_type": "Walk",
+    "start_date": "2026-10-29T07:10:00Z",
+    "start_date_local": "2026-10-29T08:10:00Z",
+    "trainer": false,
+    "commute": true
+  },
+  {
+    "id": 1006,
+    "name": "Vélotaf de septembre",
+    "distance": 7000.0,
+    "type": "Ride",
+    "sport_type": "Ride",
+    "start_date": "2026-09-15T06:50:00Z",
+    "start_date_local": "2026-09-15T08:50:00Z",
+    "trainer": false,
+    "commute": true
+  }
+]
