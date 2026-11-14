@@ -58,6 +58,8 @@ const LIVE_AFTER = 4 * HOUR;
 // ones well before.
 const REPUBLISH_AFTER = 6 * HOUR;
 const MIN_DELAY = 15_000;
+// Back sooner while TheSportsDB rounds wait for the quota (a few a minute).
+const PENDING_RETRY = 90_000;
 const MAX_ENTRIES_PER_REQUEST = 100;
 
 /** What the logs and "Find a team" show of a FFBB competition. */
@@ -267,6 +269,10 @@ export class Tracker {
     } = this.config;
     const live = liveSeconds * 1000;
     let delay = idleMinutes * MINUTE;
+    // LNB rounds still waiting for TheSportsDB's quota: come back for them.
+    if (this.lnb?.pending?.() > 0) {
+      delay = Math.min(delay, PENDING_RETRY);
+    }
     for (const { match } of this.tracked.values()) {
       if (!match || match.state === 'post' || match.statusName === 'POSTPONED') {
         continue;
@@ -404,12 +410,13 @@ export class Tracker {
       let competitions;
       let suggestions = [];
       let poules = new Map();
+      let window = null;
       if (spec.tsdbLeague) {
         // The LNB championships: TheSportsDB, its rounds as pools.
         if (!this.lnb) {
           throw new Error('no LNB source configured');
         }
-        ({ competitions, poules } = await this.lnb.competition(spec));
+        ({ competitions, poules, window } = await this.lnb.competition(spec));
       } else {
         competitions = currentCompetitions(await this.client.competitions(spec.ffbbCodes));
         if (competitions.length === 0) {
@@ -422,7 +429,11 @@ export class Tracker {
       const entry = {
         found: competitions.length > 0,
         competitions: competitions.map(describeCompetition),
-        teams: teamsFromPoules([...poules.values()]),
+        // An LNB team plays in every round: its pools are the whole window,
+        // read as the quota allows.
+        teams: teamsFromPoules([...poules.values()]).map((team) =>
+          window ? { ...team, pouleIds: window } : team,
+        ),
         suggestions,
         fetchedAt: now,
       };

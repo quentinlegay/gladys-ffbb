@@ -19,7 +19,7 @@ The data comes from the public API of the French basketball federation
    separated by commas, for example:
 
    ```
-   ELITE:ASVEL, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
+   ELITE:ASVEL, ELITE2:Blois, NM1:Saint-Quentin, LFB:Bourges
    ```
 
    The team is its name, a word of its name (accents and case ignored), its

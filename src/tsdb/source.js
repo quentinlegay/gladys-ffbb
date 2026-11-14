@@ -10,10 +10,16 @@
 // picking its game, the games to come, the scene events — is shared.
 //
 // A followed team's pools are the rounds from the one before the current one
-// to MAX_UPCOMING rounds after it: enough for the "Next games" widget.
+// to MAX_UPCOMING rounds after it: enough for the "Next games" widget. The
+// free key allows few requests a minute: the competition awaits only what
+// finding the teams needs (the previous and current rounds), and the later
+// rounds are read when the quota allows, over the next readings — until
+// then a round not read yet holds no game, and `pending()` tells the
+// tracker to come back sooner.
 // -----------------------------------------------------------------------------
 
 import { MAX_UPCOMING } from '../ffbb/parse.js';
+import { TsdbBusyError } from './client.js';
 
 export const POULE_PREFIX = 'tsdb:';
 
@@ -90,19 +96,37 @@ function parsePouleId(id) {
  * @param {ReturnType<import('./client.js').createTsdbClient>} client
  */
 export function createLnbSource(client) {
-  async function poule(id) {
+  /** Rounds asked for and not read yet (quota used). */
+  const missing = new Set();
+
+  async function poule(id, { wait = false } = {}) {
     const { leagueId, season, round } = parsePouleId(id);
-    const events = await client.round(leagueId, season, round);
-    return { id, nom: `Journée ${round}`, rencontres: events.map(eventToRencontre) };
+    try {
+      const events = await client.round(leagueId, season, round, { wait });
+      missing.delete(id);
+      return { id, nom: `Journée ${round}`, rencontres: events.map(eventToRencontre) };
+    } catch (err) {
+      if (!(err instanceof TsdbBusyError)) {
+        throw err;
+      }
+      missing.add(id);
+      return { id, nom: `Journée ${round}`, rencontres: [] };
+    }
   }
 
   return {
     poule,
 
+    /** How many rounds still wait for the quota. */
+    pending() {
+      return missing.size;
+    },
+
     /**
-     * The current window of a championship: the rounds from the previous one
-     * to MAX_UPCOMING after the current one, as pools, and a competition entry
-     * for the logs. `competitions` is empty when the league has no game.
+     * The current window of a championship: `window`, the pool ids of the
+     * rounds from the previous one to MAX_UPCOMING after the current one;
+     * `poules`, the previous and current rounds, read; and a competition
+     * entry for the logs. `competitions` is empty when the league has no game.
      */
     async competition(spec) {
       const league = await client.league(spec.tsdbLeague);
@@ -113,15 +137,14 @@ export function createLnbSource(client) {
       if (!season || !Number.isFinite(current)) {
         return { competitions: [], poules: new Map() };
       }
+      const first = Math.max(1, current - 1);
+      const window = [];
+      for (let round = first; round <= current + MAX_UPCOMING; round += 1) {
+        window.push(pouleId(spec.tsdbLeague, season, round));
+      }
       const poules = new Map();
-      for (let round = Math.max(1, current - 1); round <= current + MAX_UPCOMING; round += 1) {
-        const id = pouleId(spec.tsdbLeague, season, round);
-        const read = await poule(id);
-        if (read.rencontres.length === 0 && round > current) {
-          // Past the last round of the season.
-          break;
-        }
-        poules.set(id, read);
+      for (const id of window.slice(0, current - first + 1)) {
+        poules.set(id, await poule(id, { wait: true }));
       }
       const name = text(league?.strLeague) || spec.competitionName;
       return {
@@ -129,6 +152,7 @@ export function createLnbSource(client) {
           { id: `tsdb-${spec.tsdbLeague}`, nom: `${name} ${season}`, code: 'TheSportsDB' },
         ],
         poules,
+        window,
       };
     },
   };

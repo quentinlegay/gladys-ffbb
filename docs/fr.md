@@ -20,7 +20,7 @@ championnats nationaux (Nationale 1, 2, 3…). Pas de compte, pas de clé d'API.
    `COMPÉTITION:ÉQUIPE`, séparées par des virgules, par exemple :
 
    ```
-   ELITE:ASVEL, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
+   ELITE:ASVEL, ELITE2:Blois, NM1:Saint-Quentin, LFB:Bourges
    ```
 
    L'équipe est son nom, un mot de son nom (accents et majuscules ignorés),

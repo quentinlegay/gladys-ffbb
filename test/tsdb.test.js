@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { normalizeConfig } from '../src/config.js';
 import { TRIGGERS } from '../src/events.js';
 import { Tracker } from '../src/tracker.js';
-import { createTsdbClient, TsdbError } from '../src/tsdb/client.js';
+import { createTsdbClient, TsdbBusyError, TsdbError } from '../src/tsdb/client.js';
+import { MAX_UPCOMING } from '../src/ffbb/parse.js';
 import { createLnbSource, eventToRencontre, pouleId } from '../src/tsdb/source.js';
 import { createFakeFfbb } from './helpers/fakeFfbb.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
@@ -82,32 +83,37 @@ test('a final game, a scheduled one and a postponed one, as FFBB rencontres', ()
   assert.equal(canceled.gsId.currentStatus, 'CANCELED');
 });
 
-test('the window of rounds: the previous one to the end of the season', async () => {
+test('the window of rounds: the previous one to MAX_UPCOMING after the current one', async () => {
   const client = fakeTsdbClient();
   const source = createLnbSource(client);
-  const { competitions, poules } = await source.competition({
+  const { competitions, poules, window } = await source.competition({
     tsdbLeague: '4423',
     competitionName: 'Betclic ELITE',
   });
-  // Round 8 is current: 7 before it, then 8, 9, and round 10 is empty here.
+  // Round 8 is current: from 7 to 8 + MAX_UPCOMING.
   assert.deepEqual(
-    [...poules.keys()],
-    [
-      pouleId('4423', '2026-2027', 7),
-      pouleId('4423', '2026-2027', 8),
-      pouleId('4423', '2026-2027', 9),
-    ],
+    window,
+    Array.from({ length: MAX_UPCOMING + 2 }, (_, i) => pouleId('4423', '2026-2027', 7 + i)),
   );
-  assert.deepEqual(client.calls, [
-    'league 4423',
-    'next 4423',
-    'round 7',
-    'round 8',
-    'round 9',
-    'round 10',
-  ]);
+  // Only what finding the teams needs is read now.
+  assert.deepEqual([...poules.keys()], window.slice(0, 2));
+  assert.deepEqual(client.calls, ['league 4423', 'next 4423', 'round 7', 'round 8']);
   assert.equal(competitions[0].nom, 'French LNB 2026-2027');
-  assert.equal(poules.get(pouleId('4423', '2026-2027', 9)).rencontres.length, 8);
+  assert.equal(poules.get(window[1]).rencontres.length, 8);
+});
+
+test('a round the quota does not allow yet holds no game and is pending', async () => {
+  const client = fakeTsdbClient();
+  client.round = async () => {
+    throw new TsdbBusyError('eventsround.php');
+  };
+  const source = createLnbSource(client);
+  const id = pouleId('4423', '2026-2027', 12);
+  assert.deepEqual((await source.poule(id)).rencontres, []);
+  assert.equal(source.pending(), 1);
+  client.round = async () => ROUNDS[9];
+  assert.equal((await source.poule(id)).rencontres.length, 8);
+  assert.equal(source.pending(), 0);
 });
 
 function setup({ teams, now }) {
@@ -211,7 +217,7 @@ test('the client: free key in the path, rounds cached, errors typed', async () =
     }
     return { ok: false, status: 429, json: async () => ({}) };
   };
-  const client = createTsdbClient({ fetch, minIntervalMs: 0, now: () => clock });
+  const client = createTsdbClient({ fetch, now: () => clock, sleep: async () => {} });
   assert.equal((await client.round('4423', '2026-2027', 8)).length, 8);
   await client.round('4423', '2026-2027', 8);
   assert.deepEqual(calls, [
@@ -225,4 +231,78 @@ test('the client: free key in the path, rounds cached, errors typed', async () =
     client.nextEvent('4423'),
     (err) => err instanceof TsdbError && err.status === 429,
   );
+});
+
+test('the client keeps under the quota, waits out a 429, serves stale answers', async () => {
+  let clock = Date.parse('2026-11-15T08:00Z');
+  const slept = [];
+  const calls = [];
+  let refuse = false;
+  const fetch = async (url) => {
+    calls.push(url);
+    if (refuse) {
+      return {
+        ok: false,
+        status: 429,
+        headers: new Headers({ 'retry-after': '120' }),
+        json: async () => ({}),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({ events: ROUNDS[7] }),
+    };
+  };
+  const client = createTsdbClient({
+    fetch,
+    rateLimit: 2,
+    now: () => clock,
+    sleep: async (ms) => {
+      slept.push(ms);
+      clock += ms;
+    },
+  });
+  // Rounds 20, 21: in quota. Round 22 waits for the oldest to be a minute old.
+  await client.round('4423', '2026-2027', 20);
+  await client.round('4423', '2026-2027', 21);
+  await client.round('4423', '2026-2027', 22);
+  assert.deepEqual(slept, [60_000]);
+  // A minute later: one slot again (round 23), then none.
+  await client.round('4423', '2026-2027', 23);
+  assert.deepEqual(slept, [60_000]);
+  // Without waiting: no quota left, nothing read before → busy.
+  await assert.rejects(client.round('4423', '2026-2027', 26, { wait: false }), TsdbBusyError);
+
+  // A 429 pauses every request for its Retry-After.
+  clock += 61_000;
+  refuse = true;
+  await assert.rejects(client.nextEvent('4423'), (err) => err.status === 429);
+  refuse = false;
+  slept.length = 0;
+  await client.nextEvent('4423');
+  assert.ok(slept[0] >= 119_000, `waited ${slept[0]} ms`);
+
+  // Round 20 expired (6 h) but the quota is used: its last answer comes back.
+  clock += 7 * 60 * 60 * 1000;
+  await client.round('4423', '2026-2027', 30);
+  await client.round('4423', '2026-2027', 31);
+  const before = calls.length;
+  assert.equal((await client.round('4423', '2026-2027', 20, { wait: false })).length, 8);
+  assert.equal(calls.length, before);
+});
+
+test('test_teams says the games to come are still being read, not that there are none', async () => {
+  const { testTeams } = await import('../src/actions.js');
+  const { tsdb, tracker } = setup({ teams: 'ELITE:Paris', now: '2026-11-15T08:00Z' });
+  // The quota lets the previous and current rounds through, not the later ones.
+  const round = tsdb.round.bind(tsdb);
+  tsdb.round = async (id, season, r, options) => {
+    if (r > 8) throw new TsdbBusyError('eventsround.php');
+    return round(id, season, r, options);
+  };
+  const message = await testTeams(tracker);
+  assert.match(message.fr, /encore en cours de lecture chez TheSportsDB/);
+  assert.doesNotMatch(message.fr, /aucun match à venir/);
 });

@@ -91,7 +91,7 @@ function entryFor(code, team) {
   return /[,;:\n]/.test(team.name) ? `${code}:${team.id}` : `${code}:${team.name}`;
 }
 
-function describeTeam(tracked, config, language, now) {
+function describeTeam(tracked, config, language, now, reading = false) {
   const { spec } = tracked;
   if (!tracked.info) {
     if (tracked.resolveError === 'ambiguous') {
@@ -112,10 +112,17 @@ function describeTeam(tracked, config, language, now) {
       .map((match) => `  → ${formatNext(match, { ...config, language })}`),
   ];
   if (tracked.stats && tracked.stats.upcoming === 0) {
-    lines.push(`  ${NO_UPCOMING[language](tracked.stats)}`);
+    lines.push(`  ${(reading ? STILL_READING : NO_UPCOMING)[language](tracked.stats)}`);
   }
   return lines.join('\n');
 }
+
+// TheSportsDB's later rounds are still being read (its quota is small).
+const STILL_READING = {
+  en: () => 'the games to come are still being read from TheSportsDB, test again in two minutes',
+  fr: () =>
+    'les matchs à venir sont encore en cours de lecture chez TheSportsDB, retestez dans deux minutes',
+};
 
 // Why no game to come: what was read, to tell an empty calendar from a bug.
 const NO_UPCOMING = {
@@ -141,7 +148,15 @@ export async function testTeams(tracker) {
   const now = tracker.now();
   const build = (language) =>
     [
-      ...teams.map((t) => describeTeam(t, tracker.config, language, now)),
+      ...teams.map((t) =>
+        describeTeam(
+          t,
+          tracker.config,
+          language,
+          now,
+          Boolean(t.spec.tsdbLeague) && tracker.lnb?.pending?.() > 0,
+        ),
+      ),
       ...tracker.parseErrors.map((err) => `${err.entry}: ${REASONS[err.reason][language]}`),
     ].join('\n');
   return multilingual(build);
