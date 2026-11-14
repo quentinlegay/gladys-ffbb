@@ -12,8 +12,9 @@
 // ("if my team leads"). The status is a `text` feature: Gladys shows it as is
 // and never marks it as outdated.
 //
-// The external id is built from the competition and the FFBB club id, never
-// from what the user typed: "ELITE:Monaco" and "ELITE:AS Monaco" are the
+// The external id is built from the competition and the club id (FFBB, or
+// TheSportsDB for the LNB championships), never
+// from what the user typed: "ELITE:ASVEL" and "ELITE:Lyon-Villeurbanne" are the
 // same device, and the device survives a change of name or season.
 // -----------------------------------------------------------------------------
 

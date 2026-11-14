@@ -20,7 +20,7 @@ championnats nationaux (Nationale 1, 2, 3…). Pas de compte, pas de clé d'API.
    `COMPÉTITION:ÉQUIPE`, séparées par des virgules, par exemple :
 
    ```
-   ELITE:Monaco, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
+   ELITE:ASVEL, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
    ```
 
    L'équipe est son nom, un mot de son nom (accents et majuscules ignorés),
@@ -43,10 +43,15 @@ championnats nationaux (Nationale 1, 2, 3…). Pas de compte, pas de clé d'API.
 
 ## Compétitions
 
-> **Betclic ELITE et ELITE 2 ne sont pas disponibles pour l'instant.** Ces
-> championnats sont gérés par la LNB, et la FFBB n'en publie que les matchs
-> amicaux. Les équipes de ces championnats ne peuvent donc pas encore être
-> suivies : il faudra une source de données LNB.
+> **Betclic ELITE et ELITE 2 viennent de [TheSportsDB](https://www.thesportsdb.com).**
+> Ces championnats sont gérés par la LNB, et la FFBB n'en publie que les
+> matchs amicaux. TheSportsDB, une base publique, donne leur calendrier et
+> leurs scores finaux, mais **pas de score en direct** : un match passe de
+> « Prochain match » à « Terminé », et seuls les déclencheurs « Match
+> bientôt » et « Match terminé » partent. Les équipes portent les noms de
+> TheSportsDB (« Lyon-Villeurbanne » pour l'ASVEL) ; les surnoms courants
+> (ASVEL, SIG, JDA, BCM, JL Bourg, Pau…) sont reconnus, et « Trouver une
+> équipe » donne les noms exacts.
 
 | Code     | Compétition                           | Aussi accepté     |
 | -------- | ------------------------------------- | ----------------- |
@@ -107,10 +112,8 @@ d'envoi, le résultat et le résumé du match en cours ou à venir.
   d'envoi, adversaire, les trois matchs suivants, bouton Actualiser.
 - **Mes équipes** : toutes les équipes suivies, les matchs en direct d'abord.
 - **Prochains matchs** : les prochains matchs de toutes les équipes suivies,
-  du plus proche au plus lointain.
-
-## Fonctionnement
-
+  du plus proche au plus lointain ; son réglage « Nombre de matchs » choisit
+  combien en afficher, de 1 à 8 (5 par défaut).
 - Les équipes et les poules de chaque compétition sont lues une fois par jour ;
   les matchs des poules des équipes suivies à chaque lecture ; le flux « live »
   de la FFBB seulement quand un match d'une équipe suivie va commencer ou est en

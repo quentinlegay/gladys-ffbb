@@ -19,7 +19,7 @@ The data comes from the public API of the French basketball federation
    separated by commas, for example:
 
    ```
-   ELITE:Monaco, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
+   ELITE:ASVEL, ELITE2:Nancy, NM1:Saint-Quentin, LFB:Bourges
    ```
 
    The team is its name, a word of its name (accents and case ignored), its
@@ -42,9 +42,14 @@ The data comes from the public API of the French basketball federation
 
 ## Competitions
 
-> **Betclic ELITE and ELITE 2 are not available yet.** These championships are
-> run by the LNB, and the FFBB only publishes their friendly games. Their
-> teams cannot be followed yet: that needs an LNB data source.
+> **Betclic ELITE and ELITE 2 come from [TheSportsDB](https://www.thesportsdb.com).**
+> These championships are run by the LNB, and the FFBB only publishes their
+> friendly games. TheSportsDB, a public database, gives their fixtures and
+> final scores, but **no live score**: a game goes from "Next" to "Final",
+> and only the "Game starting soon" and "Game ended" triggers fire. Teams
+> carry TheSportsDB's names ("Lyon-Villeurbanne" for ASVEL); the usual
+> nicknames (ASVEL, SIG, JDA, BCM, JL Bourg, Pau…) are understood, and "Find
+> a team" gives the exact names.
 
 | Code     | Competition                                 | Also accepted     |
 | -------- | ------------------------------------------- | ----------------- |
@@ -103,7 +108,8 @@ the result and the summary of the current or next game.
 - **Team game**: live score, period and clock, tip-off, opponent, the next
   three games, Refresh button.
 - **My teams**: every followed team, live games first.
-- **Next games**: the next games of every followed team, soonest first.
+- **Next games**: the next games of every followed team, soonest first; its
+  "Number of games" setting chooses how many, 1 to 8 (5 by default).
 
 ## How it works
 

@@ -13,11 +13,11 @@ export function fixture(name) {
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
 export function createFakeFfbb() {
-  const elitePoule = fixture('elite-poule').data;
+  const elitePoule = fixture('nm1-poule').data;
   return {
     calls: [],
     /** FFBB code -> competitions, as the API returns them (every season). */
-    competitionsByCode: { ELITE: fixture('elite-competitions').data },
+    competitionsByCode: { NM1: fixture('nm1-competitions').data },
     /** pool id -> pool with its games. */
     poules: { [String(elitePoule.id)]: elitePoule },
     /** Competitions only found by name (any code). */
@@ -54,7 +54,7 @@ export function createFakeFfbb() {
       return clone(this.liveGames);
     },
 
-    /** A game of the ELITE pool, by its rencontre id, to edit in place. */
+    /** A game of the fixture pool, by its rencontre id, to edit in place. */
     game(id) {
       return this.poules[String(elitePoule.id)].rencontres.find((r) => String(r.id) === String(id));
     },

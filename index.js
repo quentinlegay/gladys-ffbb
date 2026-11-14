@@ -17,6 +17,8 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from './src/config.js';
 import { createFfbbClient } from './src/ffbb/client.js';
+import { createTsdbClient } from './src/tsdb/client.js';
+import { createLnbSource } from './src/tsdb/source.js';
 import { createStore } from './src/store.js';
 import { Tracker } from './src/tracker.js';
 import { findTeams, testTeams } from './src/actions.js';
@@ -27,6 +29,8 @@ const gladys = new GladysIntegration();
 const tracker = new Tracker({
   gladys,
   client: createFfbbClient(),
+  // Betclic ELITE and ELITE 2, which the FFBB does not publish.
+  lnb: createLnbSource(createTsdbClient()),
   store: createStore(),
   // Something a widget shows changed: nudge the open dashboards.
   onChange: () => refreshWidgets(gladys),

@@ -12,10 +12,10 @@ import { createFakeGladys } from './helpers/fakeGladys.js';
 
 const POULE = '200000003010001';
 const NEXT_GAME = '200000002901003'; // Monaco – Paris Levallois, 2026-11-01 20:00 Paris
-const MONACO_DEVICE = 'ext:test:team:elite.10001';
+const MONACO_DEVICE = 'ext:test:team:nm1.10001';
 
 function setup({
-  teams = 'ELITE:Monaco, ELITE:ASVEL',
+  teams = 'NM1:Monaco, NM1:ASVEL',
   now = '2026-10-28T10:00Z',
   store,
   ...rest
@@ -66,13 +66,13 @@ test('the first reading resolves the teams and publishes one device per team', a
 
   // The competition once (with its pool), no second read of the same pool,
   // no live feed: nothing is about to start.
-  assert.deepEqual(ffbb.calls, ['competitions ELITE,PROA', `poule ${POULE}`]);
+  assert.deepEqual(ffbb.calls, ['competitions NM1', `poule ${POULE}`]);
   const devices = gladys.discovered.at(-1);
   assert.deepEqual(
     devices.map((d) => [d.name, d.external_id]),
     [
-      ['Monaco (Betclic ELITE)', MONACO_DEVICE],
-      ['ASVEL (Betclic ELITE)', 'ext:test:team:elite.10002'],
+      ['Monaco (Nationale 1)', MONACO_DEVICE],
+      ['ASVEL (Nationale 1)', 'ext:test:team:nm1.10002'],
     ],
   );
   for (const device of devices) {
@@ -106,19 +106,19 @@ test('created devices get their states, in the configured language', async () =>
   await tracker.refresh();
   gladys.createAll();
   await tracker.refresh();
-  assert.deepEqual(statesOf(gladys, 'elite.10001:team-score'), [0]);
-  assert.deepEqual(statesOf(gladys, 'elite.10001:status'), [
+  assert.deepEqual(statesOf(gladys, 'nm1.10001:team-score'), [0]);
+  assert.deepEqual(statesOf(gladys, 'nm1.10001:status'), [
     'Prochain match · dim. 1 nov., 20:00 · contre PLB',
   ]);
   // The ASVEL game is also on Nov 1, 18:00.
-  assert.deepEqual(statesOf(gladys, 'elite.10002:status'), [
+  assert.deepEqual(statesOf(gladys, 'nm1.10002:status'), [
     'Prochain match · dim. 1 nov., 18:00 · contre PAR',
   ]);
 });
 
 test('a live game: start, points, end, one scene event per transition', async () => {
   const { gladys, ffbb, tracker, clock } = setup({
-    teams: 'ELITE:Monaco',
+    teams: 'NM1:Monaco',
     now: '2026-11-01T18:00Z',
     language: 'en',
   });
@@ -144,7 +144,7 @@ test('a live game: start, points, end, one scene event per transition', async ()
   assert.equal(scored.key, TRIGGERS.TEAM_SCORED);
   assert.equal(scored.data.points, 4);
   assert.equal(scored.data.team, MONACO_DEVICE);
-  assert.equal(scored.data.competition, 'Betclic ELITE');
+  assert.equal(scored.data.competition, 'Nationale 1');
 
   // The FFBB enters the final score: the game is over.
   clock.now = Date.parse('2026-11-01T21:10Z');
@@ -163,7 +163,7 @@ test('a live game: start, points, end, one scene event per transition', async ()
 });
 
 test('the reminder fires once, before tip-off', async () => {
-  const { gladys, tracker, clock } = setup({ teams: 'ELITE:Monaco', now: '2026-11-01T18:00Z' });
+  const { gladys, tracker, clock } = setup({ teams: 'NM1:Monaco', now: '2026-11-01T18:00Z' });
   await tracker.refresh();
   assert.deepEqual(gladys.sceneEvents, []);
   clock.now = Date.parse('2026-11-01T18:35Z');
@@ -177,7 +177,7 @@ test('the reminder fires once, before tip-off', async () => {
 });
 
 test('the pace: idle, woken at the reminder, live during the game', async () => {
-  const { tracker, clock } = setup({ teams: 'ELITE:Monaco', now: '2026-10-28T10:00Z' });
+  const { tracker, clock } = setup({ teams: 'NM1:Monaco', now: '2026-10-28T10:00Z' });
   await tracker.refresh();
   assert.equal(tracker.nextDelay(), 15 * 60_000);
   clock.now = Date.parse('2026-11-01T18:20Z');
@@ -188,7 +188,7 @@ test('the pace: idle, woken at the reminder, live during the game', async () => 
 });
 
 test('an unknown team, an ambiguous one and a bad entry are reported, not followed', async () => {
-  const { gladys, tracker } = setup({ teams: 'ELITE:Cholet, ELITE:Paris, Monaco, XX!:Foo' });
+  const { gladys, tracker } = setup({ teams: 'NM1:Cholet, NM1:Paris, Monaco, XX!:Foo' });
   await tracker.refresh();
   const [cholet, paris] = tracker.list();
   assert.equal(cholet.resolveError, 'not_found');
@@ -199,30 +199,30 @@ test('an unknown team, an ambiguous one and a bad entry are reported, not follow
   );
   const status = gladys.connectionStatuses.at(-1);
   assert.equal(status.connected, false);
-  for (const entry of ['ELITE:Cholet', 'ELITE:Paris', 'Monaco', 'XX!:Foo']) {
+  for (const entry of ['NM1:Cholet', 'NM1:Paris', 'Monaco', 'XX!:Foo']) {
     assert.ok(status.message.fr.includes(entry), entry);
   }
 });
 
 test('a competition the FFBB does not know this season', async () => {
-  const { tracker, ffbb } = setup({ teams: 'NM1:Rouen' });
+  const { tracker, ffbb } = setup({ teams: 'NM2:Rouen' });
   await tracker.refresh();
   assert.equal(tracker.list()[0].resolveError, 'competition_not_found');
   // Searched by code, then by name.
-  assert.deepEqual(ffbb.calls, ['competitions NM1', 'search nationale', 'search nm1']);
+  assert.deepEqual(ffbb.calls, ['competitions NM2', 'search nationale', 'search nm2']);
 });
 
 test('a competition under another code is found by its name', async () => {
-  const { tracker, ffbb, gladys } = setup({ teams: 'ELITE:Monaco' });
-  const [current, previous] = ffbb.competitionsByCode.ELITE;
+  const { tracker, ffbb, gladys } = setup({ teams: 'NM1:Monaco' });
+  const [current, previous] = ffbb.competitionsByCode.NM1;
   ffbb.competitionsByCode = {};
   ffbb.otherCompetitions = [
-    { ...current, nom: 'BETCLIC ELITE', code: 'LNBM' },
-    { ...previous, nom: 'BETCLIC ELITE', code: 'LNBM' },
+    { ...current, nom: 'NATIONALE MASCULINE 1', code: 'CFNM1' },
+    { ...previous, nom: 'NATIONALE MASCULINE 1', code: 'CFNM1' },
     {
       id: 1,
-      nom: 'ESPOIRS BETCLIC ELITE',
-      code: 'ESP',
+      nom: 'NATIONALE MASCULINE U18',
+      code: 'NMU18',
       saison: current.saison,
       poules: [{ id: 99 }],
     },
@@ -234,7 +234,7 @@ test('a competition under another code is found by its name', async () => {
 });
 
 test('a competition not found is looked for again after an hour, not a day', async () => {
-  const { tracker, ffbb, clock } = setup({ teams: 'NM1:Rouen' });
+  const { tracker, ffbb, clock } = setup({ teams: 'NM2:Rouen' });
   await tracker.refresh();
   ffbb.calls.length = 0;
   clock.now += 30 * 60_000;
@@ -242,11 +242,11 @@ test('a competition not found is looked for again after an hour, not a day', asy
   assert.deepEqual(ffbb.calls, []);
   clock.now += 31 * 60_000;
   await tracker.refresh();
-  assert.equal(ffbb.calls[0], 'competitions NM1');
+  assert.equal(ffbb.calls[0], 'competitions NM2');
 });
 
 test('an outage keeps the last game and flags the device unreachable', async () => {
-  const { gladys, ffbb, tracker, clock } = setup({ teams: 'ELITE:Monaco' });
+  const { gladys, ffbb, tracker, clock } = setup({ teams: 'NM1:Monaco' });
   await tracker.refresh();
   ffbb.down = true;
   clock.now += 15 * 60_000;
@@ -262,13 +262,13 @@ test('a restart neither replays nor misses an event', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'ffbb-'));
   try {
     const store = createStore(join(dir, 'ffbb.json'));
-    const first = setup({ teams: 'ELITE:Monaco', now: '2026-11-01T19:05Z', store });
+    const first = setup({ teams: 'NM1:Monaco', now: '2026-11-01T19:05Z', store });
     liveGame(first.ffbb, { monaco: 10, levallois: 8 });
     await first.tracker.refresh();
     assert.deepEqual(first.gladys.sceneEvents, []);
 
     // A new process, the game went on meanwhile.
-    const second = setup({ teams: 'ELITE:Monaco', now: '2026-11-01T19:20Z', store });
+    const second = setup({ teams: 'NM1:Monaco', now: '2026-11-01T19:20Z', store });
     await second.tracker.load();
     second.tracker.configure(second.tracker.config);
     liveGame(second.ffbb, { monaco: 12, levallois: 8 });
@@ -285,7 +285,7 @@ test('a restart neither replays nor misses an event', async () => {
 });
 
 test('the same club written twice only makes one device', async () => {
-  const { gladys, tracker } = setup({ teams: 'ELITE:Monaco, ELITE:MON' });
+  const { gladys, tracker } = setup({ teams: 'NM1:Monaco, NM1:MON' });
   await tracker.refresh();
   assert.equal(gladys.discovered.at(-1).length, 1);
 });
@@ -293,7 +293,7 @@ test('the same club written twice only makes one device', async () => {
 test('the next game stays on the device while the last result is shown', async () => {
   // The day after Monaco lost in Paris: the status tells the result, the
   // next-match feature the game of Nov 1.
-  const { gladys, tracker } = setup({ teams: 'ELITE:Monaco', now: '2026-10-26T08:00Z' });
+  const { gladys, tracker } = setup({ teams: 'NM1:Monaco', now: '2026-10-26T08:00Z' });
   await tracker.refresh();
   gladys.createAll();
   await tracker.refresh();
@@ -307,22 +307,21 @@ test('the next game stays on the device while the last result is shown', async (
 });
 
 test('no game to come: the next-match feature says so', async () => {
-  const { gladys, tracker } = setup({ teams: 'ELITE:Monaco', now: '2026-11-05T08:00Z' });
+  const { gladys, tracker } = setup({ teams: 'NM1:Monaco', now: '2026-11-05T08:00Z' });
   await tracker.refresh();
   gladys.createAll();
   await tracker.refresh();
   assert.deepEqual(statesOf(gladys, ':next-match'), ['Aucun match prévu']);
 });
 
-test('Betclic ELITE as the FFBB has it: only friendlies, the user is told why', async () => {
-  const { tracker, ffbb } = setup({ teams: 'ELITE:ASVEL' });
+test('friendly competitions are never taken for the championship', async () => {
+  const { tracker, ffbb } = setup({ teams: 'NM1:Rouen' });
   const saison = { actif: true, debut: '2026-07-01' };
   ffbb.competitionsByCode = {};
   ffbb.otherCompetitions = [
-    { id: 1, nom: 'AMICALE BETCLIC ELITE', code: 'AMIBETCLIC ELITE', saison, poules: [{ id: 2 }] },
-    { id: 3, nom: 'RENCONTRE AMICALE BETCLIC ELITE', code: 'RA BETCLIC ELITE', saison },
+    { id: 1, nom: 'AMICALES NATIONALE MASCULINE 1', code: 'AMINM1', saison, poules: [{ id: 2 }] },
   ];
   await tracker.refresh();
-  assert.equal(tracker.list()[0].resolveError, 'lnb_not_published');
+  assert.equal(tracker.list()[0].resolveError, 'competition_not_found');
   assert.ok(!ffbb.calls.includes('poule 2'), 'friendly pools are not read');
 });

@@ -12,6 +12,10 @@ the notes of the version's GitHub Release.
 
 ### Added
 
+- Betclic ELITE and ELITE 2 come from TheSportsDB, since the FFBB does not
+  publish these LNB championships: fixtures and final scores (no live
+  score), the usual nicknames understood (ASVEL, SIG, JDA, BCM, JL Bourg…).
+- A "Number of games" setting on the "Next games" widget, 1 to 8.
 - The games to come: a "Next game" feature on each device, the next three
   games in the "Team game" widget, a "Next games" widget for every followed
   team, and the list in "Test the teams" — which also tells, when no game is
@@ -20,9 +24,8 @@ the notes of the version's GitHub Release.
 ### Fixed
 
 - Friendly competitions ("AMICALE BETCLIC ELITE"…) are no longer taken for
-  the championship. Betclic ELITE and ELITE 2, which the FFBB does not
-  publish (the LNB runs them), now say so instead of showing only past
-  friendlies. La Boulangère Wonderligue is found by its FFBB code, LBWL.
+  the championship. La Boulangère Wonderligue is found by its FFBB code,
+  LBWL.
 - Youth competitions written with the sex glued to the age ("U13F",
   "U18M") are no longer listed as suggestions by "Find a team".
 - The tip-off time is read from `horaire` when the FFBB keeps the date alone,

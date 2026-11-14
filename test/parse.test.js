@@ -15,7 +15,7 @@ import {
 } from '../src/ffbb/parse.js';
 import { fixture } from './helpers/fakeFfbb.js';
 
-const poule = fixture('elite-poule').data;
+const poule = fixture('nm1-poule').data;
 const games = poule.rencontres;
 const MONACO = '10001';
 const noLive = () => undefined;
@@ -73,7 +73,7 @@ test('a team is found by id, name, abbreviation or words, accents and case ignor
 });
 
 test('the current season is the active one, else the latest', () => {
-  const { data } = fixture('elite-competitions');
+  const { data } = fixture('nm1-competitions');
   assert.deepEqual(
     currentCompetitions(data).map((c) => c.id),
     [200000002800001],
