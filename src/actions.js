@@ -21,16 +21,12 @@ const MAX_FOUND = 40;
 
 const REASONS = {
   format: {
-    en: 'write it COMPETITION:TEAM, e.g. ELITE:Monaco',
-    fr: 'écrivez-la COMPÉTITION:ÉQUIPE, par ex. ELITE:Monaco',
+    en: 'write it COMPETITION:TEAM, e.g. ELITE:ASVEL',
+    fr: 'écrivez-la COMPÉTITION:ÉQUIPE, par ex. ELITE:ASVEL',
   },
   competition: {
     en: 'unknown competition code (see the documentation)',
     fr: 'code de compétition inconnu (voir la documentation)',
-  },
-  lnb_not_published: {
-    en: 'this championship is run by the LNB, the FFBB only publishes its friendly games',
-    fr: "ce championnat est géré par la LNB, la FFBB n'en publie que les matchs amicaux",
   },
   competition_not_found: {
     en: 'competition not found at the FFBB this season, "Find a team" lists the FFBB codes',
@@ -49,8 +45,8 @@ const REASONS = {
     fr: 'équipe absente de cette compétition, utilisez « Trouver une équipe »',
   },
   unreachable: {
-    en: 'the FFBB did not answer, try again later',
-    fr: "la FFBB n'a pas répondu, réessayez plus tard",
+    en: 'the data source (FFBB or TheSportsDB) did not answer, try again later',
+    fr: "la source des données (FFBB ou TheSportsDB) n'a pas répondu, réessayez plus tard",
   },
 };
 
@@ -95,7 +91,7 @@ function entryFor(code, team) {
   return /[,;:\n]/.test(team.name) ? `${code}:${team.id}` : `${code}:${team.name}`;
 }
 
-function describeTeam(tracked, config, language, now) {
+function describeTeam(tracked, config, language, now, reading = false) {
   const { spec } = tracked;
   if (!tracked.info) {
     if (tracked.resolveError === 'ambiguous') {
@@ -116,10 +112,17 @@ function describeTeam(tracked, config, language, now) {
       .map((match) => `  → ${formatNext(match, { ...config, language })}`),
   ];
   if (tracked.stats && tracked.stats.upcoming === 0) {
-    lines.push(`  ${NO_UPCOMING[language](tracked.stats)}`);
+    lines.push(`  ${(reading ? STILL_READING : NO_UPCOMING)[language](tracked.stats)}`);
   }
   return lines.join('\n');
 }
+
+// TheSportsDB's later rounds are still being read (its quota is small).
+const STILL_READING = {
+  en: () => 'the games to come are still being read from TheSportsDB, test again in two minutes',
+  fr: () =>
+    'les matchs à venir sont encore en cours de lecture chez TheSportsDB, retestez dans deux minutes',
+};
 
 // Why no game to come: what was read, to tell an empty calendar from a bug.
 const NO_UPCOMING = {
@@ -138,14 +141,22 @@ export async function testTeams(tracker) {
   const teams = tracker.list();
   if (teams.length === 0 && tracker.parseErrors.length === 0) {
     return {
-      en: 'No team to follow yet: write one in the Teams field, e.g. ELITE:Monaco, NM1:Saint-Quentin.',
-      fr: 'Aucune équipe à suivre : écrivez-en une dans le champ Équipes, par ex. ELITE:Monaco, NM1:Saint-Quentin.',
+      en: 'No team to follow yet: write one in the Teams field, e.g. ELITE:ASVEL, NM1:Saint-Quentin.',
+      fr: 'Aucune équipe à suivre : écrivez-en une dans le champ Équipes, par ex. ELITE:ASVEL, NM1:Saint-Quentin.',
     };
   }
   const now = tracker.now();
   const build = (language) =>
     [
-      ...teams.map((t) => describeTeam(t, tracker.config, language, now)),
+      ...teams.map((t) =>
+        describeTeam(
+          t,
+          tracker.config,
+          language,
+          now,
+          Boolean(t.spec.tsdbLeague) && tracker.lnb?.pending?.() > 0,
+        ),
+      ),
       ...tracker.parseErrors.map((err) => `${err.entry}: ${REASONS[err.reason][language]}`),
     ].join('\n');
   return multilingual(build);
@@ -168,11 +179,6 @@ export async function findTeams(tracker, fields) {
   );
   if (!found) {
     return { ...REASONS.unreachable };
-  }
-  if (!found.found && competition.lnb) {
-    return multilingual(
-      (language) => `${competition.name}: ${REASONS.lnb_not_published[language]}`,
-    );
   }
   if (!found.found) {
     return notFound(competition, found.suggestions ?? []);

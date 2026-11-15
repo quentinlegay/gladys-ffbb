@@ -8,11 +8,12 @@ import {
   MY_TEAMS_WIDGET,
   TEAM_MATCH_WIDGET,
   UPCOMING_WIDGET,
+  DEFAULT_UPCOMING_COUNT,
 } from '../src/widgets.js';
 import { createFakeFfbb } from './helpers/fakeFfbb.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 
-const MONACO = 'ext:test:team:elite.10001';
+const MONACO = 'ext:test:team:nm1.10001';
 
 async function setup({ now = '2026-11-01T19:30Z', live = true } = {}) {
   const gladys = createFakeGladys();
@@ -36,7 +37,7 @@ async function setup({ now = '2026-11-01T19:30Z', live = true } = {}) {
     setTimer: () => 0,
     clearTimer: () => {},
   });
-  const config = normalizeConfig({ teams: 'ELITE:Monaco, ELITE:ASVEL' });
+  const config = normalizeConfig({ teams: 'NM1:Monaco, NM1:ASVEL' });
   tracker.configure(config);
   await tracker.refresh();
   return { gladys, tracker, config, widgets: createWidgets(tracker) };
@@ -100,8 +101,8 @@ test('upcoming_matches lists the next games of every team, soonest first', async
     ['ASVEL – Paris Basketball', 'Monaco – Paris Levallois'],
   );
   assert.deepEqual(items[0].subtitle, {
-    en: 'Sun 1 Nov, 18:00 · Betclic ELITE',
-    fr: 'dim. 1 nov., 18:00 · Betclic ELITE',
+    en: 'Sun 1 Nov, 18:00 · Nationale 1',
+    fr: 'dim. 1 nov., 18:00 · Nationale 1',
   });
   assert.deepEqual(items[0].badge.text, { en: 'home', fr: 'domicile' });
 });
@@ -111,4 +112,47 @@ test('upcoming_matches without any game to come', async () => {
   const content = await widgets[UPCOMING_WIDGET].get(gladys, { config });
   assert.deepEqual(validateWidgetContent(content), []);
   assert.match(content.components[0].text.fr, /Aucun match à venir/);
+});
+
+test('upcoming_matches shows as many games as its count setting, 8 at most', async () => {
+  const { gladys, config, widgets, tracker } = await setup({
+    now: '2026-10-28T10:00Z',
+    live: false,
+  });
+  // Ten games to come, spread over the teams.
+  for (const [index, t] of tracker.list().entries()) {
+    t.upcoming = Array.from({ length: 5 }, (_, i) => ({
+      ...t.upcoming[0],
+      id: `g${index}-${i}`,
+      kickoff: new Date(
+        Date.parse('2026-11-01T19:00Z') + (i * 2 + index) * 86_400_000,
+      ).toISOString(),
+    }));
+  }
+  const items = async (settings) =>
+    (await widgets[UPCOMING_WIDGET].get(gladys, { settings, config })).components[0].items;
+  assert.equal((await items({})).length, DEFAULT_UPCOMING_COUNT);
+  assert.equal((await items({ count: 3 })).length, 3);
+  assert.equal((await items({ count: '7' })).length, 7);
+  assert.equal((await items({ count: 50 })).length, 8);
+  assert.equal((await items({ count: 0 })).length, DEFAULT_UPCOMING_COUNT);
+  const content = await widgets[UPCOMING_WIDGET].get(gladys, { settings: { count: 8 }, config });
+  assert.deepEqual(validateWidgetContent(content), []);
+  // Soonest first, whatever the team.
+  const dates = content.components[0].items.map((i) => i.subtitle.en);
+  assert.equal(dates[0].startsWith('Sun 1 Nov'), true);
+});
+
+test('upcoming_matches count matches the manifest setting', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const manifest = JSON.parse(
+    await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
+  );
+  const field = manifest.widgets
+    .find((w) => w.key === UPCOMING_WIDGET)
+    .settings.find((s) => s.key === 'count');
+  assert.deepEqual(
+    [field.type, field.default, field.min, field.max],
+    ['number', DEFAULT_UPCOMING_COUNT, 1, 8],
+  );
 });

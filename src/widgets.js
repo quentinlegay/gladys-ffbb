@@ -7,7 +7,8 @@
 //                 Refresh button;
 //   - my_teams    every followed team in one list, with a badge (LIVE, the
 //                 result, or NEXT);
-//   - upcoming_matches  the next games of every followed team, soonest first.
+//   - upcoming_matches  the next games of every followed team, soonest first,
+//                 as many as its `count` setting (1 to 8, a list's limit).
 //
 // The content is declarative, rendered by the core with its own theme. The
 // tracker nudges every widget (requestWidgetRefresh) whenever something shown
@@ -37,6 +38,16 @@ const LIVE_TTL = 30;
 const IDLE_TTL = 600;
 // A `list` card-list shows 8 rows at most.
 const MAX_LIST_ITEMS = 8;
+// Games shown by "Next games" when its `count` setting is not set (manifest default).
+export const DEFAULT_UPCOMING_COUNT = 5;
+
+/** The `count` setting of "Next games", within what a list can show. */
+export function upcomingCount(settings) {
+  const count = Math.round(Number(settings?.count));
+  return Number.isFinite(count) && count >= 1
+    ? Math.min(count, MAX_LIST_ITEMS)
+    : DEFAULT_UPCOMING_COUNT;
+}
 
 // "(home)" / "(away)" after the opponent's name.
 const HOME_AWAY = {
@@ -135,7 +146,7 @@ function upcomingList(entries, config, { withTeam }) {
   };
 }
 
-function upcomingContent(tracker, config) {
+function upcomingContent(tracker, config, settings) {
   const entries = tracker
     .list()
     .filter((t) => t.info)
@@ -159,7 +170,10 @@ function upcomingContent(tracker, config) {
   }
   return {
     ttl_seconds: IDLE_TTL,
-    components: [upcomingList(entries, config, { withTeam: true }), refreshButton()],
+    components: [
+      upcomingList(entries.slice(0, upcomingCount(settings)), config, { withTeam: true }),
+      refreshButton(),
+    ],
   };
 }
 
@@ -364,9 +378,9 @@ export function createWidgets(tracker) {
       action: (_gladys, { actionKey }) => refreshAction(actionKey),
     },
     [UPCOMING_WIDGET]: {
-      async get(_gladys, { config }) {
-        logger.debug(`onWidgetGet <- ${UPCOMING_WIDGET}`);
-        return upcomingContent(tracker, config);
+      async get(_gladys, { settings, config }) {
+        logger.debug(`onWidgetGet <- ${UPCOMING_WIDGET} ${upcomingCount(settings)}`);
+        return upcomingContent(tracker, config, settings);
       },
       action: (_gladys, { actionKey }) => refreshAction(actionKey),
     },

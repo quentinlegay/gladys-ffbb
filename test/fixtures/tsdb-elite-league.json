@@ -1,0 +1,12 @@
+{
+  "leagues": [
+    {
+      "idLeague": "4423",
+      "strSport": "Basketball",
+      "strLeague": "French LNB",
+      "strLeagueAlternate": "LNB",
+      "strCurrentSeason": "2026-2027",
+      "strCountry": "France"
+    }
+  ]
+}

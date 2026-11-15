@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG, MAX_TEAMS, normalizeConfig, parseTeams } from '../src/config.js';
-import { matchesName, parseCompetition } from '../src/competitions.js';
+import { isSeniorName, matchesName, parseCompetition } from '../src/competitions.js';
 
 test('normalizeConfig fills the defaults and clamps the numbers', () => {
   assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
@@ -59,6 +59,11 @@ test('the senior competitions are recognized by their FFBB names', () => {
   assert.ok(is('NM1', 'NATIONALE MASCULINE 1'));
   assert.ok(is('NM1', 'Championnat de France NM1'));
   assert.ok(!is('NM1', 'NATIONALE MASCULINE U15'));
+  // "U13F", "U18M": the sex glued to the age.
+  assert.ok(!isSeniorName('Playoff Elite U13F'));
+  assert.ok(!isSeniorName('U18M ELITE BRASSAGES 2'));
+  assert.ok(!isSeniorName('U15 ELITE'));
+  assert.ok(isSeniorName('ELITE NATIONALE'));
   assert.ok(!is('NM1', 'NATIONALE FEMININE 1'));
   assert.ok(is('NF1', 'NATIONALE FEMININE 1'));
   assert.ok(is('NF2', 'Nationale 2 Féminine'));

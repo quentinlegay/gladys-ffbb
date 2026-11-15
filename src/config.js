@@ -13,7 +13,7 @@ import { parseCompetition } from './competitions.js';
 // Defaults: they MUST stay consistent with the `default` values declared in
 // the `config_schema` of the manifest (test/manifest.test.js checks it).
 export const DEFAULT_CONFIG = {
-  teams: '', // "ELITE:Monaco, NM1:Saint-Quentin" — see parseTeams()
+  teams: '', // "ELITE:ASVEL, NM1:Saint-Quentin" — see parseTeams()
   language: 'fr', // language of the status texts published on the devices
   timezone: 'Europe/Paris', // tip-off times are written in this time zone
   reminder_minutes: 30, // "game starting soon" trigger, 0 = never
@@ -111,7 +111,8 @@ export function parseTeams(text) {
       code: competition.code,
       ffbbCodes: competition.ffbbCodes,
       searchTerms: competition.searchTerms,
-      lnb: Boolean(competition.lnb),
+      tsdbLeague: competition.tsdbLeague,
+      aliases: competition.aliases,
       pattern: competition.pattern,
       competitionName: competition.name,
       team,

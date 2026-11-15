@@ -219,13 +219,14 @@ export function normalize(value) {
  * abbreviation, else the only team whose name contains the words.
  * @returns {{ team?: object, error?: 'not_found' | 'ambiguous', candidates?: object[] }}
  */
-export function findTeam(teams, query) {
+export function findTeam(teams, query, aliases = {}) {
   const raw = text(query);
   const byId = teams.find((team) => team.id === raw || team.engagementIds.includes(raw));
   if (byId) {
     return { team: byId };
   }
-  const wanted = normalize(raw);
+  // A nickname ("ASVEL") stands for the source's name ("Lyon-Villeurbanne").
+  const wanted = normalize(aliases[normalize(raw)] ?? raw);
   if (!wanted) {
     return { error: 'not_found', candidates: [] };
   }
@@ -413,6 +414,8 @@ export function matchFromRencontre(rencontre, team, live) {
 // A finished game stays on display this long after its tip-off, before the
 // next one takes its place.
 const RECENT_POST_MS = 18 * 60 * 60 * 1000;
+// The most games to come kept per team: what the "Next games" widget can show.
+export const MAX_UPCOMING = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -429,7 +432,7 @@ function teamMatches(rencontres, team, liveOf) {
  * is ahead (or today, for a game whose time is not set yet).
  * @returns {Match[]}
  */
-export function upcomingMatches(rencontres, team, liveOf, now = Date.now(), limit = 5) {
+export function upcomingMatches(rencontres, team, liveOf, now = Date.now(), limit = MAX_UPCOMING) {
   return teamMatches(rencontres, team, liveOf)
     .filter((match) => {
       if (match.state !== 'pre') {

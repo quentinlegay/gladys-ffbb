@@ -8,11 +8,12 @@ working on this repository.
 A Gladys Assistant **external integration** (Node 22+, ESM, no build step, one runtime
 dependency: `@gladysassistant/integration-sdk`) that follows French basketball teams
 (Betclic ELITE, ELITE 2, Nationale, LFB…) through the public FFBB API, the one behind the
-federation's official app. It started from the official JavaScript template
+federation's official app, and through TheSportsDB for the two LNB championships (Betclic
+ELITE, ELITE 2) the FFBB does not publish. It started from the official JavaScript template
 ([GladysAssistant/integration-template-js](https://github.com/GladysAssistant/integration-template-js))
 and follows the design of [prohand/gladys-teamtracker](https://github.com/prohand/gladys-teamtracker).
 
-The user writes `COMPETITION:TEAM` entries (`ELITE:Monaco, NM1:Saint-Quentin`). Each team
+The user writes `COMPETITION:TEAM` entries (`ELITE:ASVEL, NM1:Saint-Quentin`). Each team
 becomes a device (team score, opponent score, a "Match" status text, a "Next game" text),
 plus five scene
 triggers (match soon, started, team scored, opponent scored, ended), one scene action
@@ -43,6 +44,8 @@ src/config.js           DEFAULT_CONFIG (mirrors the manifest defaults), normaliz
 src/competitions.js     our competition codes -> FFBB codes (codes are stored by users)
 src/ffbb/client.js      the FFBB endpoints (token from items/configuration, fetch injected)
 src/ffbb/parse.js       FFBB JSON -> teams, Match (the team's side: scores, state, result), dates
+src/tsdb/client.js      TheSportsDB (free key, throttled to 30 requests/min, rounds cached)
+src/tsdb/source.js      LNB championships: TheSportsDB rounds as FFBB pools, events as rencontres
 src/events.js           two readings -> the scene events between them (pure)
 src/format.js           status lines and dates, English and French
 src/tracker.js          the loop: read the FFBB, publish devices/states/badges, fire events, pace
@@ -51,7 +54,8 @@ src/devices/team.js     the device of a followed team (external ids, features, s
 src/actions.js          Configuration buttons: test_teams, find_team
 src/scenes.js           scene action get_match (reads the cache, never the FFBB)
 src/widgets.js          widgets team_match, my_teams and upcoming_matches
-test/fixtures/          FFBB answers shaped after the API fields — tests never touch the network
+test/fixtures/          FFBB answers shaped after the API fields, real trimmed TheSportsDB
+                        answers (tsdb-*) — tests never touch the network
 ```
 
 ### The FFBB API
@@ -71,10 +75,25 @@ The fixtures were written from the field lists of the
 recorded from the live API: when a real answer differs, trim it into `test/fixtures/` and
 fix `src/ffbb/parse.js`.
 
+### The LNB championships (TheSportsDB)
+
+The FFBB only publishes friendlies for Betclic ELITE and ELITE 2, and the LNB's own API
+(`api-prod.lnb.fr`) requires authorization: they come from TheSportsDB, public and
+documented (`https://www.thesportsdb.com/api/v1/json/123/`, the free key). Leagues 4423
+(Betclic ELITE) and 4577 (ELITE 2). With the free key the league endpoints return one
+item only, but `eventsround.php?id=&r=&s=` returns a whole round: a competition is the
+rounds from the one before the current one (`eventsnextleague` gives it) to
+`MAX_UPCOMING` after, each round a pool `tsdb:<league>:<season>:<round>`, each event a
+rencontre (home team = equipe 1, the TheSportsDB team id as club and entry id, `joue` on
+`FT`/`AOT`). Timestamps are UTC without an offset. No live score with the free key: a
+game goes from `pre` to `post`. Team names are TheSportsDB's ("Lyon-Villeurbanne"): the
+competition's `aliases` map nicknames (normalized) to them.
+
 ### Invariants worth knowing
 
-- **External ids are forever.** A device is `team:<our competition code>.<FFBB club id>`,
-  never what the user typed: `ELITE:Monaco` and `ELITE:AS Monaco` are the same device, and
+- **External ids are forever.** A device is `team:<our competition code>.<FFBB club id>`
+  (the TheSportsDB team id for ELITE / ELITE 2),
+  never what the user typed: `ELITE:ASVEL` and `ELITE:Lyon-Villeurbanne` are the same device, and
   it survives a new season. Trigger, action, widget, feature, config and competition keys
   are stored by users: never rename them.
 - **Dates without offset are Paris time**; midnight or a bare date means "time not set"

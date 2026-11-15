@@ -32,17 +32,49 @@ function nationale(sex, level) {
 export const COMPETITIONS = {
   // Men — professional (LNB). The LNB runs these championships itself: the
   // FFBB only publishes their friendly games (seen in Oct. 2026: "AMICALE
-  // BETCLIC ELITE", "RENCONTRE AMICALE ELITE 2"…). `lnb` lets the user know
-  // why they are not found instead of a generic "not found".
+  // BETCLIC ELITE", "RENCONTRE AMICALE ELITE 2"…). They are read from
+  // TheSportsDB instead (`tsdbLeague`, see src/tsdb/), whose team names are
+  // not always the ones fans write: `aliases` maps the usual nicknames
+  // (normalized) to its names.
   ELITE: {
-    lnb: true,
+    tsdbLeague: '4423',
+    aliases: {
+      asvel: 'Lyon-Villeurbanne',
+      'ldlc asvel': 'Lyon-Villeurbanne',
+      villeurbanne: 'Lyon-Villeurbanne',
+      sig: 'Strasbourg',
+      'sig strasbourg': 'Strasbourg',
+      jda: 'Dijon',
+      'jda dijon': 'Dijon',
+      bcm: 'Gravelines-Dunkerque',
+      gravelines: 'Gravelines-Dunkerque',
+      dunkerque: 'Gravelines-Dunkerque',
+      jlb: 'Bourg-en-Bresse',
+      'jl bourg': 'Bourg-en-Bresse',
+      bourg: 'Bourg-en-Bresse',
+      pau: 'Élan Béarnais',
+      'pau lacq orthez': 'Élan Béarnais',
+      ebplo: 'Élan Béarnais',
+      csp: 'Limoges',
+      'limoges csp': 'Limoges',
+      msb: 'Le Mans Sarthe Basket',
+      'le mans': 'Le Mans Sarthe Basket',
+      chalon: 'Élan Chalon',
+      sluc: 'SLUC Nancy Basket',
+      nancy: 'SLUC Nancy Basket',
+      roanne: 'Chorale Roanne Basket',
+      'saint quentin': 'Saint-Quentin Basket-Ball',
+      'paris basket': 'Paris Basketball',
+      paris: 'Paris Basketball',
+    },
     ffbbCodes: ['ELITE', 'PROA'],
     name: 'Betclic ELITE',
     searchTerms: ['elite', 'pro a'],
     pattern: /\bbetclic\b|^(lnb )?(jeep )?elite( masculine)?$|\bpro a\b/,
   },
   ELITE2: {
-    lnb: true,
+    tsdbLeague: '4577',
+    aliases: {},
     ffbbCodes: ['ELIT2', 'ELITE2', 'PROB'],
     name: 'ELITE 2',
     searchTerms: ['elite', 'pro b'],
@@ -74,7 +106,7 @@ export const COMPETITIONS = {
 // Youth, reserve and friendly competitions share words with the senior
 // championships ("AMICALE BETCLIC ELITE", "M. AMICAUX SM - BETCLIC Elite").
 const NOT_SENIOR =
-  /\b(u ?\d{2}|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?|amica(l|le|les|ux))\b/;
+  /\b(u ?\d{2}[mf]?|espoirs?|jeunes?|cadet(te)?s?|juniors?|minimes?|benjamin(e)?s?|amica(l|le|les|ux))\b/;
 
 // What users write instead of our codes: the former names of the leagues.
 const ALIASES = {

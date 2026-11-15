@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "idEvent": "2599299",
+      "strTimestamp": "2026-11-15T15:00:00",
+      "dateEvent": "2026-11-15",
+      "strTime": "15:00:00",
+      "strStatus": "NS",
+      "strPostponed": "no",
+      "intRound": "8",
+      "strSeason": "2026-2027",
+      "idLeague": "4423",
+      "idHomeTeam": "135239",
+      "strHomeTeam": "Gravelines-Dunkerque",
+      "idAwayTeam": "137296",
+      "strAwayTeam": "SLUC Nancy Basket",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "strVenue": "Stades de Flandres"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 //
 // One reading ("cycle") per wake-up:
 //   1. the competitions of the followed teams, once a day: their pools and
-//      the teams playing in them (this is how "ELITE:Monaco" becomes a FFBB
+//      the teams playing in them (this is how "ELITE:ASVEL" becomes a FFBB
 //      club id, and how a new season's pools are found);
 //   2. the pools of the followed teams: every game, with its final score;
 //   3. the live feed, only when a followed team's game is about to start or
@@ -37,6 +37,7 @@ import { detectEvents, eventData } from './events.js';
 import { formatStatus } from './format.js';
 import { buildTeamDevice, teamExternalIds, teamStates } from './devices/team.js';
 import { isSeniorName, matchesName } from './competitions.js';
+import { POULE_PREFIX } from './tsdb/source.js';
 
 const logger = createLogger({ name: 'tracker' });
 
@@ -57,6 +58,8 @@ const LIVE_AFTER = 4 * HOUR;
 // ones well before.
 const REPUBLISH_AFTER = 6 * HOUR;
 const MIN_DELAY = 15_000;
+// Back sooner while TheSportsDB rounds wait for the quota (a few a minute).
+const PENDING_RETRY = 90_000;
 const MAX_ENTRIES_PER_REQUEST = 100;
 
 /** What the logs and "Find a team" show of a FFBB competition. */
@@ -86,15 +89,17 @@ export class Tracker {
    * @param {object} deps
    * @param {object} deps.gladys   the SDK instance (or a fake)
    * @param {object} deps.client   FFBB client (src/ffbb/client.js)
+   * @param {object} [deps.lnb]    LNB championships source (src/tsdb/source.js)
    * @param {object} [deps.store]  persistence (src/store.js)
    * @param {() => number} [deps.now]
    * @param {(fn: Function, ms: number) => unknown} [deps.setTimer]
    * @param {(handle: unknown) => void} [deps.clearTimer]
    * @param {() => void} [deps.onChange] something shown changed (widgets)
    */
-  constructor({ gladys, client, store, now, setTimer, clearTimer, onChange }) {
+  constructor({ gladys, client, lnb, store, now, setTimer, clearTimer, onChange }) {
     this.gladys = gladys;
     this.client = client;
+    this.lnb = lnb;
     this.store = store;
     this.now = now ?? Date.now;
     this.setTimer = setTimer ?? setTimeout;
@@ -264,6 +269,10 @@ export class Tracker {
     } = this.config;
     const live = liveSeconds * 1000;
     let delay = idleMinutes * MINUTE;
+    // LNB rounds still waiting for TheSportsDB's quota: come back for them.
+    if (this.lnb?.pending?.() > 0) {
+      delay = Math.min(delay, PENDING_RETRY);
+    }
     for (const { match } of this.tracked.values()) {
       if (!match || match.state === 'post' || match.statusName === 'POSTPONED') {
         continue;
@@ -320,7 +329,8 @@ export class Tracker {
         continue;
       }
       try {
-        poules.set(pouleId, await this.client.poule(pouleId));
+        const source = pouleId.startsWith(POULE_PREFIX) ? this.lnb : this.client;
+        poules.set(pouleId, await source.poule(pouleId));
       } catch (err) {
         logger.warn(`Pool ${pouleId} unavailable (${err.message})`);
       }
@@ -332,8 +342,12 @@ export class Tracker {
         .flatMap((id) => poules.get(id)?.rencontres ?? [])
         .filter((rencontre) => matchFromRencontre(rencontre, tracked.info) !== null);
     const resolved = this.list().filter((t) => t.info);
+    // The live feed is the FFBB's: the LNB championships are not in it.
     const someLive = resolved.some((t) =>
       gamesOf(t).some((rencontre) => {
+        if (String(rencontre.id).startsWith('tsdb-')) {
+          return false;
+        }
         const { iso, timeKnown } = parseFfbbDate(rencontre.date_rencontre);
         const played = rencontre.joue === true || Number(rencontre.joue) === 1;
         return !played && inLiveWindow(iso, timeKnown, now);
@@ -393,19 +407,33 @@ export class Tracker {
       return { ...cached, freshPoules: new Map() };
     }
     try {
-      let competitions = currentCompetitions(await this.client.competitions(spec.ffbbCodes));
+      let competitions;
       let suggestions = [];
-      if (competitions.length === 0) {
-        ({ competitions, suggestions } = await this.competitionsByName(spec));
-      }
-      const poules = new Map();
-      for (const pouleId of poulesOf(competitions)) {
-        poules.set(pouleId, await this.client.poule(pouleId));
+      let poules = new Map();
+      let window = null;
+      if (spec.tsdbLeague) {
+        // The LNB championships: TheSportsDB, its rounds as pools.
+        if (!this.lnb) {
+          throw new Error('no LNB source configured');
+        }
+        ({ competitions, poules, window } = await this.lnb.competition(spec));
+      } else {
+        competitions = currentCompetitions(await this.client.competitions(spec.ffbbCodes));
+        if (competitions.length === 0) {
+          ({ competitions, suggestions } = await this.competitionsByName(spec));
+        }
+        for (const pouleId of poulesOf(competitions)) {
+          poules.set(pouleId, await this.client.poule(pouleId));
+        }
       }
       const entry = {
         found: competitions.length > 0,
         competitions: competitions.map(describeCompetition),
-        teams: teamsFromPoules([...poules.values()]),
+        // An LNB team plays in every round: its pools are the whole window,
+        // read as the quota allows.
+        teams: teamsFromPoules([...poules.values()]).map((team) =>
+          window ? { ...team, pouleIds: window } : team,
+        ),
         suggestions,
         fetchedAt: now,
       };
@@ -413,6 +441,8 @@ export class Tracker {
       if (entry.found) {
         const names = entry.competitions.map((c) => `${c.name} (code ${c.code}, id ${c.id})`);
         logger.info(`${spec.competitionName}: ${names.join(', ')}`);
+      } else if (spec.tsdbLeague) {
+        logger.warn(`${spec.competitionName}: no game at TheSportsDB this season`);
       } else {
         const seen = suggestions.map((c) => `${c.name} (code ${c.code})`).join(', ') || 'none';
         logger.warn(
@@ -475,8 +505,8 @@ export class Tracker {
         continue;
       }
       const found = competition.found
-        ? findTeam(competition.teams, tracked.spec.team)
-        : { error: tracked.spec.lnb ? 'lnb_not_published' : 'competition_not_found' };
+        ? findTeam(competition.teams, tracked.spec.team, tracked.spec.aliases)
+        : { error: 'competition_not_found' };
       const before = tracked.resolveError;
       tracked.resolveError = found.error ?? null;
       tracked.candidates = found.candidates ?? [];
@@ -582,8 +612,8 @@ export class Tracker {
     let message;
     if (teams.length === 0 && problems.length === 0) {
       message = {
-        en: 'Add at least one team in the configuration, e.g. ELITE:Monaco.',
-        fr: 'Ajoutez au moins une équipe dans la configuration, par ex. ELITE:Monaco.',
+        en: 'Add at least one team in the configuration, e.g. ELITE:ASVEL.',
+        fr: 'Ajoutez au moins une équipe dans la configuration, par ex. ELITE:ASVEL.',
       };
     } else if (problems.length > 0) {
       const list = problems.join(', ');

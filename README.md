@@ -16,7 +16,7 @@ the one behind its official app: no account, no API key.
 
 ## What it does
 
-The user writes `COMPETITION:TEAM` entries (`ELITE:Monaco, NM1:Saint-Quentin`).
+The user writes `COMPETITION:TEAM` entries (`ELITE:ASVEL, NM1:Saint-Quentin`).
 Each team becomes a device:
 
 | Feature          | Type                     | Content                                       |
@@ -46,7 +46,12 @@ The FFBB app talks to a Directus server at `https://api.ffbb.app/`:
 | `items/ffbbserver_poules/<id>`               | every game of a pool: teams, date, final score |
 | `json/lives.json`                            | games being played: live score, period, clock  |
 
-The API is undocumented and may change: the integration keeps the last known
+Betclic ELITE and ELITE 2 are run by the LNB, and the FFBB only publishes
+their friendly games: they come from [TheSportsDB](https://www.thesportsdb.com)
+(public API, free key), round by round — fixtures and final scores, no live
+score.
+
+The FFBB API is undocumented and may change: the integration keeps the last known
 game on any error and flags the device `unreachable`. Requests stay light:
 the competition once a day, the followed teams' pools at every reading (every
 15 min by default, 30 s during a game), the live feed only around a followed

@@ -21,7 +21,7 @@ async function setup() {
     setTimer: () => 0,
     clearTimer: () => {},
   });
-  const config = normalizeConfig({ teams: 'ELITE:Monaco', language: 'en' });
+  const config = normalizeConfig({ teams: 'NM1:Monaco', language: 'en' });
   tracker.configure(config);
   await tracker.refresh();
   return { tracker, ffbb, config };
@@ -31,7 +31,7 @@ test('get_match gives the outputs the manifest declares, from the cache', async 
   const { tracker, ffbb, config } = await setup();
   ffbb.calls.length = 0;
   const outputs = await createSceneActions(tracker)[GET_MATCH](null, {
-    fields: { team: 'ext:test:team:elite.10001' },
+    fields: { team: 'ext:test:team:nm1.10001' },
     config,
   });
   assert.deepEqual(ffbb.calls, [], 'never reads the FFBB');
@@ -56,7 +56,7 @@ test('every trigger event carries only declared keys, and every declared variabl
     const data = eventData(
       { key: trigger.key, match, points: 2, minutes: 30 },
       'device',
-      'ELITE',
+      'NM1',
       'x',
     );
     const fields = trigger.fields.map((f) => f.key);
